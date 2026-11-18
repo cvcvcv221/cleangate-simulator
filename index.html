@@ -61,6 +61,16 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .note{font-size:13px;color:var(--muted);max-width:90ch}
 .busy{opacity:.55;transition:opacity .2s}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.guide{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px 20px}
+.guide summary{cursor:pointer;font-weight:700;padding:12px 0;list-style:none}
+.guide summary::-webkit-details-marker{display:none}
+.guide summary::before{content:"▸ ";color:var(--accent)}
+.guide[open] summary::before{content:"▾ "}
+.guide .gbody{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;padding:4px 0 18px}
+.guide h3{font-size:14px;margin:0 0 6px;color:var(--accent)}
+.guide ol,.guide ul{margin:0;padding-left:20px;color:var(--body);font-size:14px}
+.guide li{margin:3px 0}
+.guide b{color:var(--ink)}
 </style>
 </head><body>
 
@@ -80,6 +90,67 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
     <button class="btn" id="pRand" type="button">위험 점수 무효</button>
   </div>
 </header>
+
+<details class="guide" id="guide">
+  <summary>사용법 보기</summary>
+  <div class="gbody">
+    <div>
+      <h3>1. 이 화면이 하는 일</h3>
+      <ul>
+        <li>부산항 수입 빈 컨테이너가 출구 촬영 → 위험 점수 선별 → 개장·AI 판정 → 검사원 확인 → 세척을 거치는 하루를 컴퓨터로 여러 번 돌려 평균을 보여 줍니다.</li>
+        <li>왼쪽 조건을 바꾸면 0.3초 뒤 자동으로 다시 계산됩니다. 따로 누를 버튼은 없습니다.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>2. 위쪽 버튼 (미리 정해 둔 조건)</h3>
+      <ul>
+        <li><b>기준안</b>: 하루 3,855대, 검사 레인 6개, 세척 4라인, 불량률 5%</li>
+        <li><b>최대 물동월(3월)</b>: 하루 4,397대, 레인 7개, 세척 5라인</li>
+        <li><b>불량률 12.9%</b>: 2022 상반기 조사 수준, 레인 7개, 세척 9라인</li>
+        <li><b>위험 점수 무효</b>: 점수가 제비뽑기만큼만 맞을 때 (포착률 20%)</li>
+      </ul>
+    </div>
+    <div>
+      <h3>3. 왼쪽 조건</h3>
+      <ul>
+        <li><b>개장 방식</b>: 선별(상위 20% + 무작위 5%) 또는 전수(전부 열기)</li>
+        <li><b>하루 물량</b>: 하루에 나가는 빈 컨테이너 수</li>
+        <li><b>검사 레인 / 세척 라인</b>: 동시에 검사·세척할 수 있는 자리 수</li>
+        <li><b>불량률</b>: 흙·쓰레기·곰팡이·파손·생물이 있는 비율</li>
+        <li><b>선별 포착률</b>: 불량 중 위험 점수 상위 20%에 드는 비율. 20%면 무작위와 같음</li>
+        <li><b>AI 탐지율</b>: 열어 본 불량 중 AI가 찾아내는 비율</li>
+        <li><b>세척장 이동</b>: 검사 구역에서 세척장까지 편도 시간</li>
+      </ul>
+    </div>
+    <div>
+      <h3>4. 결과 읽는 법</h3>
+      <ul>
+        <li><b>검사 대기·오염 처리</b>: 10대 중 9대가 끝나는 시간. 초록 = 목표 달성, 주황 = 근접, 빨강 = 초과</li>
+        <li><b>반출 전 적발</b>: 하루·1년 동안 나가기 전에 잡는 불량 수</li>
+        <li><b>개장 1건당 적발률</b>: 문을 한 번 열 때 불량을 잡을 확률. "무작위 개장의 ○배"가 위험 점수의 효과</li>
+        <li><b>시간대별 대기 줄</b>: 낮(초록 막대)에 줄이 몰리는 모습</li>
+      </ul>
+    </div>
+    <div>
+      <h3>5. 시연 순서 (약 1분)</h3>
+      <ol>
+        <li>기준안 → 대기 약 7분, 하루 약 60건 적발 확인</li>
+        <li>검사 레인을 6 → 5로 → 대기가 20분 넘게 늘어남</li>
+        <li>위험 점수 무효 → 적발이 절반 이하로, 배수가 1.0배로</li>
+        <li>세척장 이동 60분 → 오염 처리가 늘어도 4시간 안</li>
+        <li>전수 개장 → 레인 21개가 필요함을 확인</li>
+      </ol>
+    </div>
+    <div>
+      <h3>6. 알아 둘 점</h3>
+      <ul>
+        <li>하루 물량은 부산항만공사 2025년 실데이터, 불량률·포착률·탐지율·처리 시간은 공개 자료가 없어 가정한 값입니다.</li>
+        <li>빠른 화면 표시를 위해 4일 × 6회 반복으로 계산해, 30회 반복한 보고서 값과 소수점 차이가 납니다.</li>
+        <li>이 파일 하나만 내려받아 인터넷 없이 열어도 계산됩니다.</li>
+      </ul>
+    </div>
+  </div>
+</details>
 
 <div class="grid">
   <section class="panel" aria-label="조건">
