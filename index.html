@@ -1,0 +1,219 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CleanGate 2단 검사 시뮬레이터</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: 조작판(좌) + 결과판(우). 항만 관제 화면처럼 숫자가 주인공, 목표선과 비교해 상태를 색과 글로 표시 */
+:root{
+  --bg:#F3F5F2; --panel:#FBFCFA; --ink:#14212F; --body:#3D4A57; --muted:#66727D; --line:#D3DBD6;
+  --accent:#157A62; --accent-soft:#DCEEE7; --warn:#B85412; --warn-soft:#F8E5D6; --bad:#B3261E; --bad-soft:#F7DEDC;
+  --bar:#B9C4BE; --bar-hi:#157A62;
+  --f-text:'Noto Sans KR',system-ui,sans-serif; --f-num:'JetBrains Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1A24; --panel:#152331; --ink:#EAF0EC; --body:#C2CFC9; --muted:#93A39C; --line:#2A3B49;
+  --accent:#5CC6A3; --accent-soft:#18392F; --warn:#F0A066; --warn-soft:#3A2A1C; --bad:#F2928B; --bad-soft:#3B2120;
+  --bar:#3B4E5C; --bar-hi:#5CC6A3; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1A24; --panel:#152331; --ink:#EAF0EC; --body:#C2CFC9; --muted:#93A39C; --line:#2A3B49;
+  --accent:#5CC6A3; --accent-soft:#18392F; --warn:#F0A066; --warn-soft:#3A2A1C; --bad:#F2928B; --bad-soft:#3B2120;
+  --bar:#3B4E5C; --bar-hi:#5CC6A3; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-text);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--accent)}
+h1{font-size:28px;font-weight:900;margin:2px 0 0;text-wrap:balance}
+.sub{color:var(--body);max-width:62ch;margin:4px 0 0}
+.grid{display:grid;grid-template-columns:330px 1fr;gap:20px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;min-width:0}
+.panel h2{font-size:15px;font-weight:700;margin:0 0 12px}
+.ctl{display:flex;flex-direction:column;gap:4px;padding:10px 0;border-top:1px solid var(--line)}
+.ctl:first-of-type{border-top:none;padding-top:0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-weight:500}
+.ctl output{font-family:var(--f-num);font-weight:700;color:var(--accent)}
+.ctl small{color:var(--muted);font-size:12.5px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{font:inherit;border:0;background:transparent;color:var(--body);padding:8px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--panel);font-weight:700}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:9px;padding:7px 12px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:520px){.kpis{grid-template-columns:1fr}}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi .k{font-size:13px;color:var(--muted);font-weight:500}
+.kpi .v{font-family:var(--f-num);font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.kpi .d{font-size:13px;color:var(--body)}
+.pill{align-self:flex-start;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px}
+.ok{background:var(--accent-soft);color:var(--accent)} .mid{background:var(--warn-soft);color:var(--warn)} .no{background:var(--bad-soft);color:var(--bad)}
+.chart{overflow-x:auto}
+.chart svg{display:block;width:100%;min-width:520px;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);margin-top:6px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.step{border-left:3px solid var(--line);padding:4px 0 4px 10px}
+.step b{display:block;font-family:var(--f-num);font-size:20px}
+.step span{font-size:13px;color:var(--muted)}
+.note{font-size:13px;color:var(--muted);max-width:90ch}
+.busy{opacity:.55;transition:opacity .2s}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head><body>
+
+
+
+<div class="wrap">
+<header>
+  <div>
+    <div class="eyebrow">CLEANGATE · 시연용</div>
+    <h1>2단 검사 시뮬레이터</h1>
+    <p class="sub">부산항 수입 빈 컨테이너가 하루 동안 게이트·검사 레인·세척 라인을 거치는 과정을 컴퓨터로 반복 운영합니다. 조건을 바꾸면 대기 시간과 적발 수가 바로 다시 계산됩니다.</p>
+  </div>
+  <div class="btns" style="margin:0">
+    <button class="btn" id="pBase" type="button">기준안</button>
+    <button class="btn" id="pPeak" type="button">최대 물동월(3월)</button>
+    <button class="btn" id="pDirty" type="button">불량률 12.9%</button>
+    <button class="btn" id="pRand" type="button">위험 점수 무효</button>
+  </div>
+</header>
+
+<div class="grid">
+  <section class="panel" aria-label="조건">
+    <h2>운영 조건</h2>
+    <div class="ctl"><span style="font-weight:500">개장 방식</span>
+      <div class="seg" role="group" aria-label="개장 방식">
+        <button type="button" id="mSel" aria-pressed="true">선별 개장</button>
+        <button type="button" id="mAll" aria-pressed="false">전수 개장</button>
+      </div>
+      <small>선별: 위험 점수 상위 20% + 나머지 중 무작위 5%</small></div>
+    <div class="ctl"><label for="daily">하루 물량 <output id="o_daily"></output></label>
+      <input type="range" id="daily" min="3000" max="4500" step="1" value="3855"><small>2025년 실적: 평균 3,855대, 3월 4,397대</small></div>
+    <div class="ctl"><label for="stations">검사 레인 <output id="o_stations"></output></label>
+      <input type="range" id="stations" min="3" max="24" step="1" value="6"></div>
+    <div class="ctl"><label for="lanes">세척 라인 <output id="o_lanes"></output></label>
+      <input type="range" id="lanes" min="2" max="12" step="1" value="4"></div>
+    <div class="ctl"><label for="prev">불량률 <output id="o_prev"></output></label>
+      <input type="range" id="prev" min="2" max="20" step="0.1" value="5"><small>가정. 2022 상반기 표본은 12.9%</small></div>
+    <div class="ctl"><label for="capture">선별 포착률 <output id="o_capture"></output></label>
+      <input type="range" id="capture" min="20" max="80" step="5" value="50"><small>불량 중 위험 상위 20%에 드는 비율. 20%면 무작위와 같음</small></div>
+    <div class="ctl"><label for="sens">AI 탐지율 <output id="o_sens"></output></label>
+      <input type="range" id="sens" min="30" max="90" step="5" value="60"><small>가정. 호주 외부 촬영 시범 약 58%</small></div>
+    <div class="ctl"><label for="travel">세척장 이동 <output id="o_travel"></output></label>
+      <input type="range" id="travel" min="0" max="120" step="10" value="0"><small>검사 구역 → 협약 세척장 편도 시간</small></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px;min-width:0" id="out" aria-live="polite">
+    <div class="kpis">
+      <div class="kpi"><span class="k">검사 대기 (10대 중 9대 기준)</span><span class="v" id="r_wait">–</span><span class="pill" id="s_wait"></span><span class="d">목표 10분 이내 (K5)</span></div>
+      <div class="kpi"><span class="k">오염 처리 (10대 중 9대 기준)</span><span class="v" id="r_wash">–</span><span class="pill" id="s_wash"></span><span class="d" id="d_wash">목표 4시간 이내 (K6)</span></div>
+      <div class="kpi"><span class="k">반출 전 적발</span><span class="v" id="r_det">–</span><span class="pill ok" id="s_det"></span><span class="d" id="d_det"></span></div>
+      <div class="kpi"><span class="k">개장 1건당 적발률</span><span class="v" id="r_eff">–</span><span class="pill" id="s_eff"></span><span class="d" id="d_eff"></span></div>
+    </div>
+
+    <div class="panel">
+      <h2>하루 흐름 (평균)</h2>
+      <div class="flow" id="flow"></div>
+    </div>
+
+    <div class="panel">
+      <h2>시간대별 검사 대기 줄</h2>
+      <div class="chart" id="chart"></div>
+      <div class="legend"><span><i class="sw" style="background:var(--bar-hi)"></i>주간 08~17시 (하루 도착의 72%)</span><span><i class="sw" style="background:var(--bar)"></i>그 외 시간</span><span>막대 = 검사 레인 앞에서 기다리는 컨테이너 수(평균)</span></div>
+    </div>
+
+    <p class="note">파이썬 제출 코드(src/sim_two_stage.py)와 같은 규칙의 이산사건 시뮬레이션입니다. 화면에서는 빠르게 보여 주기 위해 4일(첫날 제외) × 6회 반복으로 계산해, 30회 반복한 보고서 값과 소수점 차이가 날 수 있습니다. 불량률·포착률·탐지율·처리 시간(검사 2~6분, 세척 30~60분, 소독 10~25분)은 공개 자료가 없어 가정한 값입니다.</p>
+  </section>
+</div>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const HOUR_W=[...Array(24)].map((_,h)=> (h>=8&&h<17)?0.08:0.28/15);
+function rng(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+function tri(r,[lo,mo,hi]){const u=r(),c=(mo-lo)/(hi-lo);return u<c?lo+Math.sqrt(u*(hi-lo)*(mo-lo)):hi-Math.sqrt((1-u)*(hi-lo)*(hi-mo))}
+function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function pois(r,l){if(l>30)return Math.max(0,Math.round(l+Math.sqrt(l)*gauss(r)));const L=Math.exp(-l);let k=0,p=1;for(;;){p*=r();if(p<=L)return k;k++}}
+function p90(a){if(!a.length)return NaN;const s=a.slice().sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.ceil(.9*s.length)-1)]}
+// 최소 힙
+class Heap{constructor(c){this.a=[];this.c=c}push(x){const a=this.a;a.push(x);let i=a.length-1;while(i){const p=(i-1)>>1;if(this.c(a[i],a[p])<0){[a[i],a[p]]=[a[p],a[i]];i=p}else break}}
+ pop(){const a=this.a,t=a[0],e=a.pop();if(a.length){a[0]=e;let i=0;for(;;){let l=2*i+1,r=l+1,m=i;if(l<a.length&&this.c(a[l],a[m])<0)m=l;if(r<a.length&&this.c(a[r],a[m])<0)m=r;if(m===i)break;[a[i],a[m]]=[a[m],a[i]];i=m}}return t}get size(){return this.a.length}}
+
+const CFG={bio_share:.3,top_share:.2,random_share:.05,spec:.95,t_inspect:[2,3,6],t_check:[2,3,6],t_wash:[30,40,60],t_dis:[10,15,25],days:4,warm:1,reps:6,seed:20261111};
+
+function runOnce(p,seed){
+  const r=rng(seed),C=[],ev=new Heap((x,y)=>x[0]-y[0]||x[1]-y[1]);let seq=0;
+  const pr=p.prev,c=p.capture,qClean=(CFG.top_share-pr*c)/(1-pr);
+  for(let d=0;d<CFG.days;d++)for(let h=0;h<24;h++){const n=pois(r,p.daily*HOUR_W[h]);
+    for(let k=0;k<n;k++){const t=(d*24+h)*60+r()*60,bad=r()<pr,bio=bad&&r()<CFG.bio_share;
+      let sel;if(p.all)sel=true;else{const top=r()<(bad?c:qClean);sel=top||r()<CFG.random_share}
+      C.push({t,bad,bio,sel});if(sel){ev.push([t,seq++,0,C.length-1])}}}
+  let freeSt=p.stations,freeLn=p.lanes;const stQ=[];let stHead=0;const lnQ=new Heap((x,y)=>x[0]-y[0]||x[1]-y[1]);
+  const warm=CFG.warm*1440,qlog=new Array(24).fill(0),qcnt=new Array(24).fill(0);let nextSample=warm,busy=0,lastT=warm;
+  const startSt=(i,now)=>{const x=C[i];let dur=tri(r,CFG.t_inspect);x.flag=x.bad?r()<p.sens:r()>CFG.spec;if(x.flag)dur+=tri(r,CFG.t_check);ev.push([now+dur,seq++,1,i])};
+  const startLn=(i,now)=>{const x=C[i];const dur=tri(r,CFG.t_wash)+(x.bio?tri(r,CFG.t_dis):0);ev.push([now+dur,seq++,2,i])};
+  while(ev.size){const [now,,kind,i]=ev.pop();
+    while(nextSample<=now&&nextSample<CFG.days*1440){const h=Math.floor(nextSample/60)%24;qlog[h]+=stQ.length-stHead;qcnt[h]++;nextSample+=10}
+    if(now>warm){busy+=(p.stations-freeSt)*(now-Math.max(lastT,warm))}lastT=now;
+    const x=C[i];
+    if(kind===0){if(freeSt>0){freeSt--;startSt(i,now)}else stQ.push(i)}
+    else if(kind===1){if(stHead<stQ.length)startSt(stQ[stHead++],now);else freeSt++;
+      if(x.flag&&x.bad){const arr=now+p.travel;x.toWash=arr;ev.push([arr,seq++,3,i])}else x.out=now}
+    else if(kind===3){if(freeLn>0){freeLn--;startLn(i,now)}else lnQ.push([x.bio?0:1,now,i])}
+    else{x.out=now;if(lnQ.size){startLn(lnQ.pop()[2],now)}else freeLn++}}
+  const days=CFG.days-CFG.warm,M=C.filter(x=>x.t>=warm),S=M.filter(x=>x.sel&&x.out!==undefined);
+  const normal=S.filter(x=>!x.flag),conf=S.filter(x=>x.flag&&x.bad);
+  return{sel:M.filter(x=>x.sel).length/days,skip:M.filter(x=>!x.sel).length/days,normal:normal.length/days,
+    fp:S.filter(x=>x.flag&&!x.bad).length/days,conf:conf.length/days,bio:conf.filter(x=>x.bio).length/days,bad:M.filter(x=>x.bad).length/days,
+    wait:p90(normal.map(x=>x.out-x.t)),wash:p90(conf.map(x=>(x.out-x.t)/60)),
+    util:busy/(p.stations*(CFG.days*1440-warm)),q:qlog.map((v,h)=>qcnt[h]?v/qcnt[h]:0)}
+}
+function run(p){const rs=[];for(let k=0;k<CFG.reps;k++)rs.push(runOnce(p,CFG.seed+k));
+  const avg=f=>rs.reduce((s,x)=>s+(isNaN(f(x))?0:f(x)),0)/rs.length;
+  return{sel:avg(x=>x.sel),skip:avg(x=>x.skip),normal:avg(x=>x.normal),fp:avg(x=>x.fp),conf:avg(x=>x.conf),bio:avg(x=>x.bio),bad:avg(x=>x.bad),
+    wait:avg(x=>x.wait),wash:avg(x=>x.wash),util:avg(x=>x.util),q:[...Array(24)].map((_,h)=>avg(x=>x.q[h]))}}
+
+const ids=['daily','stations','lanes','prev','capture','sens','travel'];
+let mode='sel';
+const fmt=(n,d=0)=>Number(n).toLocaleString('ko-KR',{maximumFractionDigits:d,minimumFractionDigits:d});
+function labels(){$('o_daily').textContent=fmt(+$('daily').value)+'대';$('o_stations').textContent=$('stations').value+'개';$('o_lanes').textContent=$('lanes').value+'개';
+  $('o_prev').textContent=(+$('prev').value).toFixed(1)+'%';$('o_capture').textContent=$('capture').value+'%';$('o_sens').textContent=$('sens').value+'%';$('o_travel').textContent=$('travel').value+'분';
+  $('capture').disabled=mode==='all'}
+function status(el,v,good,mid,unitGood){el.className='pill '+(v<=good?'ok':v<=mid?'mid':'no');el.textContent=v<=good?'목표 달성':v<=mid?'목표 근접':'목표 초과'}
+function draw(q){const W=640,H=200,L=36,B=26,T=10,max=Math.max(4,Math.ceil(Math.max(...q)/2)*2),bw=(W-L-8)/24;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="시간대별 평균 검사 대기 줄 길이">`;
+  for(let k=0;k<=4;k++){const v=max*k/4,y=H-B-(H-B-T)*k/4;s+=`<line x1="${L}" x2="${W-4}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="var(--f-num)">${fmt(v,v%1?1:0)}</text>`}
+  q.forEach((v,h)=>{const bh=(H-B-T)*v/max,x=L+h*bw+2;s+=`<rect x="${x}" y="${H-B-bh}" width="${bw-4}" height="${Math.max(0,bh)}" rx="2" fill="${h>=8&&h<17?'var(--bar-hi)':'var(--bar)'}"/>`;
+    if(h%3===0)s+=`<text x="${x+(bw-4)/2}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="var(--f-num)">${h}시</text>`});
+  $('chart').innerHTML=s+'</svg>'}
+function calc(){labels();$('out').classList.add('busy');
+  setTimeout(()=>{const p={daily:+$('daily').value,stations:+$('stations').value,lanes:+$('lanes').value,prev:$('prev').value/100,capture:$('capture').value/100,sens:$('sens').value/100,travel:+$('travel').value,all:mode==='all'};
+    const R=run(p);
+    $('r_wait').textContent=isFinite(R.wait)?(R.wait>=60?fmt(R.wait/60,1)+'시간':fmt(R.wait,1)+'분'):'–';status($('s_wait'),R.wait,10,20);
+    $('r_wash').textContent=isFinite(R.wash)?fmt(R.wash,1)+'시간':'–';status($('s_wash'),R.wash,4,6);
+    $('d_wash').textContent=p.travel?`목표 4시간 이내 (K6), 이동 ${p.travel}분 포함`:'목표 4시간 이내 (K6), 이동 시간 제외';
+    $('r_det').textContent='하루 '+fmt(R.conf,0)+'건';$('s_det').textContent='연 약 '+fmt(R.conf*365/10000,1)+'만 건';
+    $('d_det').textContent=`전체 불량 하루 약 ${fmt(R.bad,0)}건 중 ${fmt(R.conf/R.bad*100,0)}% (생물 의심 ${fmt(R.bio,0)}건)`;
+    const eff=R.conf/R.sel*100,base=p.prev*p.sens*100;$('r_eff').textContent=fmt(eff,1)+'%';
+    const ratio=eff/base;$('s_eff').className='pill '+(ratio>=1.5?'ok':ratio>=1.1?'mid':'no');$('s_eff').textContent='무작위 개장의 '+fmt(ratio,1)+'배';
+    $('d_eff').textContent=`검사 레인 가동률 ${fmt(R.util*100,0)}% · 내부 검사 하루 ${fmt(R.sel,0)}대`;
+    const st=[[R.skip,'검사 없이 반출','정차 없음'],[R.normal,'정상 판정 반출','AI가 정상 판정'],[R.fp,'오판 → 확인 후 반출','검사원이 정상 확인'],[R.conf,'불량 확정 → 세척','대체 공컨 배정']];
+    $('flow').innerHTML=st.map(([v,a,b])=>`<div class="step"><b>${fmt(v,0)}대</b>${a}<br><span>${b}</span></div>`).join('');
+    draw(R.q);$('out').classList.remove('busy')},20)}
+let timer;ids.forEach(id=>$(id).addEventListener('input',()=>{labels();clearTimeout(timer);timer=setTimeout(calc,250)}));
+function setMode(m){mode=m;$('mSel').setAttribute('aria-pressed',m==='sel');$('mAll').setAttribute('aria-pressed',m==='all');
+  if(m==='all'&&+$('stations').value<21)$('stations').value=21;if(m==='all'&&+$('lanes').value<8)$('lanes').value=8;if(m==='sel'&&+$('stations').value>10){$('stations').value=6;$('lanes').value=4}calc()}
+$('mSel').onclick=()=>setMode('sel');$('mAll').onclick=()=>setMode('all');
+const preset=v=>{mode='sel';$('mSel').setAttribute('aria-pressed','true');$('mAll').setAttribute('aria-pressed','false');Object.entries(v).forEach(([k,x])=>$(k).value=x);calc()};
+$('pBase').onclick=()=>preset({daily:3855,stations:6,lanes:4,prev:5,capture:50,sens:60,travel:0});
+$('pPeak').onclick=()=>preset({daily:4397,stations:7,lanes:5,prev:5,capture:50,sens:60,travel:0});
+$('pDirty').onclick=()=>preset({daily:3855,stations:7,lanes:9,prev:12.9,capture:50,sens:60,travel:0});
+$('pRand').onclick=()=>preset({daily:3855,stations:6,lanes:4,prev:5,capture:20,sens:60,travel:0});
+calc();
+})();
+</script>
+</body></html>
