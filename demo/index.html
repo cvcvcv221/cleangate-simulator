@@ -155,7 +155,7 @@ select,input[type=text]{font:inherit;border:1px solid var(--line);background:var
   <div class="learn" id="learn"></div>
 </section>
 
-<p class="foot">사진 1~12는 시스템 시험용 합성 이미지, 13~22는 Wikimedia Commons의 실제 사진입니다(컨테이너 안에서 찍지 않은 근접 사진 포함, 출처는 판정 화면에 표시). 13 Claudio Elias(PD) · 14 U.S. Marine Corps(PD) · 15 U.S. CBP(PD) · 16 Ryan Hodnett(CC BY-SA 4.0) · 17 Editor abcdef(CC0) · 18·19 NY State IPM Program at Cornell University(CC BY 2.0) · 20 Mclund(CC BY 4.0) · 21 USDA Forest Service(PD) · 22 Tony Webster(CC BY-SA 2.0). 설비 규모 계산은 <a href="https://cvcvcv221.github.io/cleangate-simulator/">2단 검사 시뮬레이터</a>에서 볼 수 있습니다. 팀 클린게이트 · 2026 스마트물류 문제해결 경진대회</p>
+<p class="foot">사진 1~12는 해충·오염 장면을 보여 주기 위한 합성 이미지(오염된 컨테이너 내부의 공개 실사가 없음), 13~19는 Wikimedia Commons의 실제 컨테이너 내부 사진입니다. 13 Claudio Elias(PD) · 14·15 U.S. Marine Corps, Lance Cpl. Eric Reyes(PD) · 16~19 Danny Cornelissen(출처 표시 조건). 설비 규모 계산은 <a href="https://cvcvcv221.github.io/cleangate-simulator/">2단 검사 시뮬레이터</a>에서 볼 수 있습니다. 팀 클린게이트 · 2026 스마트물류 문제해결 경진대회</p>
 </div>
 
 <script>
@@ -199,10 +199,10 @@ const PHOTOS=[
  {id:1,label:"정상"},{id:2,label:"흙·낙엽"},{id:3,label:"개미 무리"},{id:4,label:"물 얼룩·곰팡이"},
  {id:5,label:"포장 폐기물"},{id:6,label:"거미줄·벌레 사체"},{id:7,label:"어두운 사진"},{id:8,label:"설치류 흔적"},
  {id:9,label:"바닥 파손"},{id:10,label:"화학 오염"},{id:11,label:"달팽이·씨앗"},{id:12,label:"알 덩어리"},
- {id:13,label:"[실사] 정상 (냉동 컨테이너)",real:1},{id:14,label:"[실사] 천장 부식 구멍",real:1},{id:15,label:"[실사·근접] 딱정벌레 유충",real:1},
- {id:16,label:"[실사·근접] 나방 알 덩어리",real:1},{id:17,label:"[실사] 달팽이",real:1},{id:18,label:"[실사] 설치류 배설물",real:1},
- {id:19,label:"[실사] 노린재",real:1},{id:20,label:"[실사·근접] 흙덩이",real:1},{id:21,label:"[실사·근접] 천공충 가루",real:1},{id:22,label:"[실사] 곰팡이",real:1}];
-const CREDITS={13:"Claudio Elias · 퍼블릭 도메인",14:"U.S. Marine Corps (Lance Cpl. Eric Reyes) · 퍼블릭 도메인",15:"U.S. Customs and Border Protection · 퍼블릭 도메인",16:"Ryan Hodnett · CC BY-SA 4.0",17:"Editor abcdef · CC0",18:"NY State IPM Program at Cornell University · CC BY 2.0",19:"NY State IPM Program at Cornell University · CC BY 2.0",20:"Mclund · CC BY 4.0",21:"USDA Forest Service · 퍼블릭 도메인",22:"Tony Webster · CC BY-SA 2.0"};
+ {id:13,label:"[실사] 정상 (냉동 컨테이너)",real:1},{id:14,label:"[실사] 천장 부식 구멍",real:1},{id:15,label:"[실사] 바닥 흙먼지 (점검 중)",real:1},
+ {id:16,label:"[실사] 바닥 보수판",real:1},{id:17,label:"[실사] 정상 (알루미늄 바닥)",real:1},{id:18,label:"[실사] 남은 물건",real:1},{id:19,label:"[실사] 정상 (나무 바닥)",real:1}];
+const CREDITS={13:"Claudio Elias · 퍼블릭 도메인",14:"U.S. Marine Corps (Lance Cpl. Eric Reyes) · 퍼블릭 도메인",15:"U.S. Marine Corps (Lance Cpl. Eric Reyes) · 퍼블릭 도메인",16:"Danny Cornelissen · 출처 표시",17:"Danny Cornelissen · 출처 표시",18:"Danny Cornelissen · 출처 표시",19:"Danny Cornelissen · 출처 표시"};
+const REMOTE={15:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/3rd_MLG_Marines_Gain_Certification_in_Dry_Cargo_Container_Inspection_%288838057%29.jpg/960px-3rd_MLG_Marines_Gain_Certification_in_Dry_Cargo_Container_Inspection_%288838057%29.jpg",16:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Inside_of_a_container_1.jpg/960px-Inside_of_a_container_1.jpg",17:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Inside_of_a_container_4.jpg/960px-Inside_of_a_container_4.jpg",18:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Inside_of_a_container_5.jpg/960px-Inside_of_a_container_5.jpg",19:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Inside_of_a_container_2.jpg/960px-Inside_of_a_container_2.jpg"};
 const F=(category,name,severity,description,location,alive)=>({category,name,severity,description,location,alive:alive||"해당 없음"});
 const PREP={
  1:{quality:"양호",confidence:.92,findings:[],reason:"보이는 문제가 없어 반출 가능"},
@@ -218,17 +218,14 @@ const PREP={
  11:{quality:"양호",confidence:.76,findings:[F("연체동물","달팽이 의심","높음","벽에 달팽이로 보이는 개체 여러 마리가 붙어 있음","왼쪽·오른쪽 벽","알 수 없음"),F("식물·종자","씨앗·곡물 의심","중간","바닥에 작은 씨앗이 흩어져 있음","바닥 앞쪽")],reason:"외래 달팽이 가능성이 있어 검역본부 확인 필요"},
  13:{quality:"양호",confidence:.9,findings:[],reason:"바닥·벽·천장에 보이는 오염이나 손상이 없어 반출 가능"},
  14:{quality:"양호",confidence:.88,findings:[F("구조 손상","천장 부식 구멍 다수","높음","천장 전체에 빛이 새어 들어오는 부식 구멍이 여러 개 있음","천장"),F("곰팡이·습기","녹물 자국","중간","벽을 따라 녹물이 흘러내린 자국이 있음","왼쪽 벽")],reason:"구멍으로 빗물과 생물이 드나들 수 있어 수리 전 재사용 금지"},
- 15:{quality:"양호",confidence:.83,findings:[F("알·유충·고치","털 많은 딱정벌레 유충 무리 의심","높음","갈색 털이 난 유충 십여 마리가 모여 있음 (수시렁이류 의심)","근접 사진","알 수 없음")],reason:"카프라딱정벌레 같은 저장물 해충일 수 있어 반출을 멈추고 검역본부 확인 필요"},
- 16:{quality:"양호",confidence:.82,findings:[F("알·유충·고치","털로 덮인 알 덩어리 의심","높음","연한 황갈색 털로 덮인 알 덩어리가 표면에 붙어 있음 (나방류 의심)","근접 사진","알 수 없음")],reason:"매미나방 같은 나방 알 덩어리일 수 있어 반출을 멈추고 검역본부 확인 필요"},
- 17:{quality:"양호",confidence:.85,findings:[F("연체동물","달팽이 의심","높음","금속 표면에 껍데기가 있는 달팽이 한 마리가 붙어 있음","문 아래 금속 표면","예"),F("식물·종자","풀잎","중간","달팽이 주변에 풀잎이 끼어 있음","문 아래")],reason:"외래 달팽이(아프리카왕달팽이 등) 가능성이 있어 검역본부 확인 필요"},
- 18:{quality:"양호",confidence:.8,findings:[F("설치류·동물 흔적","설치류 배설물 의심","높음","흙바닥에 검은 타원형 알갱이 여러 개가 흩어져 있음","바닥 앞쪽"),F("흙·토양","흙·자갈","중간","바닥에 흙과 작은 자갈이 깔려 있음","바닥")],reason:"설치류 흔적은 방역업체 처리 후 소독·세척 필요"},
- 19:{quality:"양호",confidence:.78,findings:[F("곤충·절지동물","노린재 의심","높음","모서리 틈에 갈색 노린재로 보이는 개체 한 마리가 붙어 있음","모서리 틈","알 수 없음")],reason:"썩덩나무노린재처럼 틈에서 월동하는 해충일 수 있어 검역본부 확인 필요"},
- 20:{quality:"양호",confidence:.86,findings:[F("흙·토양","흙덩이","높음","손바닥만 한 흙덩이에 작은 조개껍데기 조각이 섞여 있음","근접 사진")],reason:"흙은 해충 알과 병원균을 옮길 수 있어 수거 후 고압 세척"},
- 21:{quality:"양호",confidence:.8,findings:[F("목재 잔재","천공 가루·나무 부스러기 의심","높음","나무 표면에 흰 실 모양의 가루가 넓게 붙어 있음","근접 사진"),F("곤충·절지동물","목재 천공 해충 흔적 의심","중간","가루 모양으로 보아 나무 속을 파먹는 유충 흔적일 수 있음","근접 사진","알 수 없음")],reason:"바닥재·받침목 속 천공충일 수 있어 검역본부 확인 후 처리"},
- 22:{quality:"양호",confidence:.84,findings:[F("곰팡이·습기","검은 곰팡이 반점","중간","벽과 바닥 이음부를 따라 검은 반점이 줄지어 있고 물방울이 맺혀 있음","벽 아래 이음부")],reason:"습기와 곰팡이는 해충 서식 조건이 되므로 세척·건조 필요"},
+ 15:{quality:"역광",confidence:.72,findings:[F("흙·토양","바닥 흙먼지·얼룩","중간","문 쪽 바닥 전체에 흙먼지와 얼룩이 넓게 깔려 있음","바닥 앞쪽~가운데"),F("일반 폐기물","작은 잔재물","낮음","바닥에 작은 부스러기가 흩어져 보임","바닥 가운데")],reason:"흙은 해충 알이 섞일 수 있어 쓸어 낸 뒤 세척하고, 역광이라 조명을 켜고 재촬영 권장"},
+ 16:{quality:"양호",confidence:.8,findings:[F("구조 손상","바닥 가운데 금속판 보수 흔적","낮음","나무 바닥 가운데를 금속판으로 덧댄 자리가 있고 판 위에 금 간 듯한 검은 줄이 보임","바닥 가운데")],reason:"보수 부위가 벌어졌는지 확인 후 이상 없으면 반출"},
+ 17:{quality:"양호",confidence:.9,findings:[],reason:"냉동 컨테이너 알루미늄 바닥·벽에 보이는 오염이나 손상이 없어 반출 가능"},
+ 18:{quality:"양호",confidence:.82,findings:[F("일반 폐기물","남은 물건(금속 봉)","중간","문 근처 바닥에 금속 봉 몇 개가 놓여 있음","문 앞 바닥 왼쪽"),F("흙·토양","바닥 홈 사이 잔재","낮음","바닥 레일 홈 사이에 작은 부스러기가 보임","바닥")],reason:"남은 물건을 치우고 바닥 홈을 청소한 뒤 반출"},
+ 19:{quality:"양호",confidence:.88,findings:[],reason:"나무 바닥과 벽에 보이는 오염·손상이 없어 반출 가능"},
  12:{quality:"양호",confidence:.8,findings:[F("알·유충·고치","알 덩어리 의심","높음","천장과 벽 위쪽에 둥근 알 덩어리 여러 개가 붙어 있음","천장, 오른쪽 벽 위","알 수 없음")],reason:"해충 알일 수 있어 반출을 멈추고 검역본부 확인 필요"},
 };
-const imgSrc=id=>`img/${id}.jpg`;
+const imgSrc=id=>REMOTE[id]||`img/${id}.jpg`;
 
 // ---------- 오늘의 반출 목록 (예시 데이터) ----------
 const ORIGIN={"중국 광저우":.9,"베트남 하이퐁":.75,"인도네시아 자카르타":.7,"중국 상하이":.55,"태국 람차방":.6,"미국 로스앤젤레스":.3,"일본 도쿄":.2,"독일 함부르크":.15};
@@ -237,13 +234,13 @@ const CARRIER={"가나해운":.6,"다라해운":.35,"마바해운":.15};
 const SEASON=.4; // 11월 (선선한 시기)
 const VESSELS=["CG 오션 1호","CG 오션 2호","CG 블루 3호"];
 const ROWS=[
- ["CGDU1000137",0,"중국 광저우","목재·석재","가나해운",0,16],
+ ["CGDU1000137",0,"중국 광저우","목재·석재","가나해운",0,3],
  ["CGDU1000142",0,"중국 광저우","농산물·식물","가나해운",0,15],
- ["CGDU1000158",1,"베트남 하이퐁","목재·석재","다라해운",0,18],
- ["CGDU1000163",1,"인도네시아 자카르타","농산물·식물","가나해운",0,13],
+ ["CGDU1000158",1,"베트남 하이퐁","목재·석재","다라해운",0,12],
+ ["CGDU1000163",1,"인도네시아 자카르타","농산물·식물","가나해운",0,17],
  ["CGDU1000179",0,"중국 상하이","식품·사료","다라해운",0,0],
  ["CGDU1000184",2,"미국 로스앤젤레스","일반 공산품","마바해운",0,14],
- ["CGDU1000190",1,"태국 람차방","일반 공산품","마바해운",1,20],
+ ["CGDU1000190",1,"태국 람차방","일반 공산품","마바해운",1,2],
  ["CGDU1000205",2,"일본 도쿄","전자제품","마바해운",0,0],
  ["CGDU1000210",0,"중국 상하이","일반 공산품","다라해운",0,0],
  ["CGDU1000226",2,"독일 함부르크","전자제품","마바해운",0,0],
@@ -297,7 +294,7 @@ const PROMPT=c=>`당신은 항만 방역 검사관을 돕는 1차 선별 AI입�
 직전 화물: ${c.cargo} / 출발지: ${c.origin} / 사전 위험 점수: ${c.score}
 보이는 문제를 아래 유형 중 하나로 모두 분류하세요.
 ${CAT_NAMES.map(n=>`- ${n}: ${CATS[n].ex}`).join("\n")}
-규칙: 보이는 것만 근거로, 종은 확정하지 말고 "의심"으로 씁니다. 사진이 어두우면 quality에 적고 확실한 것만 적습니다. 사진은 실제 사진이거나 시스템 시험용 합성 이미지입니다. 근접 사진도 컨테이너 안에서 찍은 것으로 보고 판정하세요.
+규칙: 보이는 것만 근거로, 종은 확정하지 말고 "의심"으로 씁니다. 사진이 어두우면 quality에 적고 확실한 것만 적습니다. 사진은 실제 컨테이너 내부 사진이거나 시스템 시험용 합성 이미지입니다.
 다음 JSON 하나로만 답하세요:
 {"quality":"양호"|"어두움"|"흐림","confidence":0~1,"findings":[{"category":"유형 이름","name":"짧은 이름","severity":"높음"|"중간"|"낮음","description":"한 문장","location":"위치","alive":"예"|"아니오"|"알 수 없음"|"해당 없음"}],"reason":"가장 시급한 조치와 이유 한 문장"}
 문제가 없으면 findings는 빈 배열입니다.`;
