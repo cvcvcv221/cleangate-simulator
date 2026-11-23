@@ -155,7 +155,7 @@ select,input[type=text]{font:inherit;border:1px solid var(--line);background:var
   <div class="learn" id="learn"></div>
 </section>
 
-<p class="foot">사진 1~12는 해충·오염 장면을 보여 주기 위한 합성 이미지(오염된 컨테이너 내부의 공개 실사가 없음), 13~19는 Wikimedia Commons의 실제 컨테이너 내부 사진입니다. 13 Claudio Elias(PD) · 14·15 U.S. Marine Corps, Lance Cpl. Eric Reyes(PD) · 16~19 Danny Cornelissen(출처 표시 조건). 설비 규모 계산은 <a href="https://cvcvcv221.github.io/cleangate-simulator/">2단 검사 시뮬레이터</a>에서 볼 수 있습니다. 팀 클린게이트 · 2026 스마트물류 문제해결 경진대회</p>
+<p class="foot">모든 사진은 실제 컨테이너 내부 사진입니다. 13 Claudio Elias(PD) · 14·15 U.S. Marine Corps, Lance Cpl. Eric Reyes(PD) · 16~19 Danny Cornelissen(출처 표시 조건, Wikimedia Commons) · 20~24 팀이 모은 테스트 사진(20·21 hz-containers.com). 설비 규모 계산은 <a href="https://cvcvcv221.github.io/cleangate-simulator/">2단 검사 시뮬레이터</a>에서 볼 수 있습니다. 팀 클린게이트 · 2026 스마트물류 문제해결 경진대회</p>
 </div>
 
 <script>
@@ -200,8 +200,9 @@ const PHOTOS=[
  {id:5,label:"포장 폐기물"},{id:6,label:"거미줄·벌레 사체"},{id:7,label:"어두운 사진"},{id:8,label:"설치류 흔적"},
  {id:9,label:"바닥 파손"},{id:10,label:"화학 오염"},{id:11,label:"달팽이·씨앗"},{id:12,label:"알 덩어리"},
  {id:13,label:"[실사] 정상 (냉동 컨테이너)",real:1},{id:14,label:"[실사] 천장 부식 구멍",real:1},{id:15,label:"[실사] 바닥 흙먼지 (점검 중)",real:1},
- {id:16,label:"[실사] 바닥 보수판",real:1},{id:17,label:"[실사] 정상 (알루미늄 바닥)",real:1},{id:18,label:"[실사] 남은 물건",real:1},{id:19,label:"[실사] 정상 (나무 바닥)",real:1}];
-const CREDITS={13:"Claudio Elias · 퍼블릭 도메인",14:"U.S. Marine Corps (Lance Cpl. Eric Reyes) · 퍼블릭 도메인",15:"U.S. Marine Corps (Lance Cpl. Eric Reyes) · 퍼블릭 도메인",16:"Danny Cornelissen · 출처 표시",17:"Danny Cornelissen · 출처 표시",18:"Danny Cornelissen · 출처 표시",19:"Danny Cornelissen · 출처 표시"};
+ {id:16,label:"[실사] 바닥 보수판",real:1},{id:17,label:"[실사] 정상 (알루미늄 바닥)",real:1},{id:18,label:"[실사] 남은 물건",real:1},{id:19,label:"[실사] 정상 (나무 바닥)",real:1},
+ {id:20,label:"[실사] 정상 (새 컨테이너)",real:1},{id:21,label:"[실사] 벽 부식·바닥 보수",real:1},{id:22,label:"[실사] 남은 포장재·톱밥",real:1},{id:23,label:"[실사] 곰팡이·녹물",real:1},{id:24,label:"[실사] 낙엽·흙",real:1}];
+const CREDITS={13:"Claudio Elias · 퍼블릭 도메인 · Wikimedia Commons",14:"U.S. Marine Corps (Lance Cpl. Eric Reyes) · 퍼블릭 도메인 · Wikimedia Commons",15:"U.S. Marine Corps (Lance Cpl. Eric Reyes) · 퍼블릭 도메인 · Wikimedia Commons",16:"Danny Cornelissen · 출처 표시 · Wikimedia Commons",17:"Danny Cornelissen · 출처 표시 · Wikimedia Commons",18:"Danny Cornelissen · 출처 표시 · Wikimedia Commons",19:"Danny Cornelissen · 출처 표시 · Wikimedia Commons",20:"팀 수집 사진 (hz-containers.com)",21:"팀 수집 사진 (hz-containers.com)",22:"팀 테스트 사진",23:"팀 테스트 사진",24:"팀 테스트 사진"};
 const REMOTE={15:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/3rd_MLG_Marines_Gain_Certification_in_Dry_Cargo_Container_Inspection_%288838057%29.jpg/960px-3rd_MLG_Marines_Gain_Certification_in_Dry_Cargo_Container_Inspection_%288838057%29.jpg",16:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Inside_of_a_container_1.jpg/960px-Inside_of_a_container_1.jpg",17:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Inside_of_a_container_4.jpg/960px-Inside_of_a_container_4.jpg",18:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Inside_of_a_container_5.jpg/960px-Inside_of_a_container_5.jpg",19:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Inside_of_a_container_2.jpg/960px-Inside_of_a_container_2.jpg"};
 const F=(category,name,severity,description,location,alive)=>({category,name,severity,description,location,alive:alive||"해당 없음"});
 const PREP={
@@ -223,6 +224,11 @@ const PREP={
  17:{quality:"양호",confidence:.9,findings:[],reason:"냉동 컨테이너 알루미늄 바닥·벽에 보이는 오염이나 손상이 없어 반출 가능"},
  18:{quality:"양호",confidence:.82,findings:[F("일반 폐기물","남은 물건(금속 봉)","중간","문 근처 바닥에 금속 봉 몇 개가 놓여 있음","문 앞 바닥 왼쪽"),F("흙·토양","바닥 홈 사이 잔재","낮음","바닥 레일 홈 사이에 작은 부스러기가 보임","바닥")],reason:"남은 물건을 치우고 바닥 홈을 청소한 뒤 반출"},
  19:{quality:"양호",confidence:.88,findings:[],reason:"나무 바닥과 벽에 보이는 오염·손상이 없어 반출 가능"},
+ 20:{quality:"양호",confidence:.92,findings:[],reason:"새 컨테이너로 바닥·벽·천장에 오염이나 손상이 보이지 않아 반출 가능"},
+ 21:{quality:"양호",confidence:.84,findings:[F("구조 손상","벽 전체 녹·부식","중간","양쪽 벽 골판 이음매를 따라 녹이 넓게 번져 있음","양쪽 벽"),F("구조 손상","바닥 보수 흔적·얼룩","낮음","바닥 가운데에 판을 덧댄 자리와 검은 얼룩이 있음","바닥 가운데")],reason:"부식이 구멍으로 번졌는지 확인하고 녹 제거·보수 후 재사용"},
+ 22:{quality:"양호",confidence:.86,findings:[F("일반 폐기물","남은 포장재(끈·비닐·상자)","중간","바닥에 노란 끈, 흰 비닐 시트, 종이 상자가 남아 있음","바닥 가운데~오른쪽"),F("목재 잔재","톱밥·나무 부스러기","중간","바닥 앞쪽에 톱밥 같은 부스러기가 흩어져 있음","바닥 앞쪽")],reason:"포장재는 수거하고, 톱밥은 목재 해충이 섞일 수 있어 쓸어 낸 뒤 세척"},
+ 23:{quality:"양호",confidence:.83,findings:[F("곰팡이·습기","곰팡이 의심(녹색·검은 반점)","높음","왼쪽 벽 아래쪽에 녹색과 검은 반점이 군데군데 퍼져 있음","왼쪽 벽 아래"),F("곰팡이·습기","녹물 자국","낮음","안쪽 벽에 녹물이 흘러내린 자국이 있음","안쪽 벽")],reason:"곰팡이는 세척·건조하고 습기가 들어온 원인(틈·구멍)을 확인"},
+ 24:{quality:"양호",confidence:.85,findings:[F("식물·종자","낙엽·식물 잔재","높음","오른쪽 바닥에 마른 잎과 잔가지가 모여 있음","바닥 오른쪽 앞"),F("흙·토양","흙 부스러기","낮음","잎 주변에 흙 부스러기가 보임","바닥 오른쪽 앞")],reason:"식물 잔재에는 해충 알·씨앗이 섞일 수 있어 수거 후 세척하고 검역 확인"},
  12:{quality:"양호",confidence:.8,findings:[F("알·유충·고치","알 덩어리 의심","높음","천장과 벽 위쪽에 둥근 알 덩어리 여러 개가 붙어 있음","천장, 오른쪽 벽 위","알 수 없음")],reason:"해충 알일 수 있어 반출을 멈추고 검역본부 확인 필요"},
 };
 const imgSrc=id=>REMOTE[id]||`img/${id}.jpg`;
@@ -234,13 +240,13 @@ const CARRIER={"가나해운":.6,"다라해운":.35,"마바해운":.15};
 const SEASON=.4; // 11월 (선선한 시기)
 const VESSELS=["CG 오션 1호","CG 오션 2호","CG 블루 3호"];
 const ROWS=[
- ["CGDU1000137",0,"중국 광저우","목재·석재","가나해운",0,3],
+ ["CGDU1000137",0,"중국 광저우","목재·석재","가나해운",0,21],
  ["CGDU1000142",0,"중국 광저우","농산물·식물","가나해운",0,15],
- ["CGDU1000158",1,"베트남 하이퐁","목재·석재","다라해운",0,12],
- ["CGDU1000163",1,"인도네시아 자카르타","농산물·식물","가나해운",0,17],
+ ["CGDU1000158",1,"베트남 하이퐁","목재·석재","다라해운",0,22],
+ ["CGDU1000163",1,"인도네시아 자카르타","농산물·식물","가나해운",0,20],
  ["CGDU1000179",0,"중국 상하이","식품·사료","다라해운",0,0],
- ["CGDU1000184",2,"미국 로스앤젤레스","일반 공산품","마바해운",0,14],
- ["CGDU1000190",1,"태국 람차방","일반 공산품","마바해운",1,2],
+ ["CGDU1000184",2,"미국 로스앤젤레스","일반 공산품","마바해운",0,23],
+ ["CGDU1000190",1,"태국 람차방","일반 공산품","마바해운",1,24],
  ["CGDU1000205",2,"일본 도쿄","전자제품","마바해운",0,0],
  ["CGDU1000210",0,"중국 상하이","일반 공산품","다라해운",0,0],
  ["CGDU1000226",2,"독일 함부르크","전자제품","마바해운",0,0],
@@ -258,7 +264,7 @@ const ROWS=[
 let C=[],learnBase={};
 function score(o,ca,cr){return Math.round((.35*o+.25*CARGO[ca]+.25*SEASON+.15*CARRIER[cr])*100)/100}
 function init(){
-  C=ROWS.map(([no,v,org,ca,cr,soil,ph],i)=>({i,no,vessel:VESSELS[v],origin:org,cargo:ca,carrier:cr,soil:!!soil,photo:ph||1,score:score(ORIGIN[org],ca,cr),stage:"list"}));
+  C=ROWS.map(([no,v,org,ca,cr,soil,ph],i)=>({i,no,vessel:VESSELS[v],origin:org,cargo:ca,carrier:cr,soil:!!soil,photo:ph||19,score:score(ORIGIN[org],ca,cr),stage:"list"}));
   const sorted=[...C].sort((a,b)=>b.score-a.score);const topN=Math.round(C.length*.2);
   sorted.slice(0,topN).forEach(c=>c.why="top");
   C.forEach(c=>{if(!c.why&&c.soil)c.why="soil"});
@@ -294,7 +300,7 @@ const PROMPT=c=>`당신은 항만 방역 검사관을 돕는 1차 선별 AI입�
 직전 화물: ${c.cargo} / 출발지: ${c.origin} / 사전 위험 점수: ${c.score}
 보이는 문제를 아래 유형 중 하나로 모두 분류하세요.
 ${CAT_NAMES.map(n=>`- ${n}: ${CATS[n].ex}`).join("\n")}
-규칙: 보이는 것만 근거로, 종은 확정하지 말고 "의심"으로 씁니다. 사진이 어두우면 quality에 적고 확실한 것만 적습니다. 사진은 실제 컨테이너 내부 사진이거나 시스템 시험용 합성 이미지입니다.
+규칙: 보이는 것만 근거로, 종은 확정하지 말고 "의심"으로 씁니다. 사진이 어두우면 quality에 적고 확실한 것만 적습니다. 사진은 실제 컨테이너 내부 사진입니다.
 다음 JSON 하나로만 답하세요:
 {"quality":"양호"|"어두움"|"흐림","confidence":0~1,"findings":[{"category":"유형 이름","name":"짧은 이름","severity":"높음"|"중간"|"낮음","description":"한 문장","location":"위치","alive":"예"|"아니오"|"알 수 없음"|"해당 없음"}],"reason":"가장 시급한 조치와 이유 한 문장"}
 문제가 없으면 findings는 빈 배열입니다.`;
@@ -333,9 +339,9 @@ function renderShoot(){
   list.forEach(c=>q.append(qitem(c,sel2===c.i,`${c.origin} · ${WHY[c.why][0].replace("개장 · ","")}`,()=>{sel2=c.i;render()})));
   const v=$("shootView");v.innerHTML="";const c=C[sel2];
   if(c==null||c.stage!=="shoot"){v.append(el("div","empty","왼쪽에서 컨테이너를 고르세요."));return}
-  const im=el("img","photo");im.src=imgSrc(c.photo);im.alt=`${fmtNo(c.no)} 내부 사진: ${PHOTOS[c.photo-1].label}`;v.append(im);if(CREDITS[c.photo])v.append(el("small","credit","실제 사진 출처: "+CREDITS[c.photo]+" (Wikimedia Commons)"));
+  const im=el("img","photo");im.src=imgSrc(c.photo);im.alt=`${fmtNo(c.no)} 내부 사진: ${PHOTOS[c.photo-1].label}`;v.append(im);if(CREDITS[c.photo])v.append(el("small","credit","사진 출처: "+CREDITS[c.photo]));
   const r=el("div","row");const lb=el("label","","내부 사진");lb.htmlFor="pick";const s=el("select");s.id="pick";
-  PHOTOS.forEach(p=>{const o=el("option","",`${p.id}. ${p.label}`);o.value=p.id;if(p.id===c.photo)o.selected=true;s.append(o)});
+  PHOTOS.filter(p=>p.real).forEach(p=>{const o=el("option","",`${p.id}. ${p.label}`);o.value=p.id;if(p.id===c.photo)o.selected=true;s.append(o)});
   s.onchange=()=>{c.photo=+s.value;render()};r.append(lb,s);v.append(r);
   const dl=el("dl","kv");[["출발지",c.origin],["직전 화물",c.cargo],["선사",c.carrier],["위험 점수",c.score.toFixed(2)]].forEach(([a,b])=>{dl.append(el("dt","",a),el("dd","",b))});v.append(dl);
   const r2=el("div","row");const bA=el("button","btn primary",sample?"실시간 AI 판정":"AI 판정 (준비한 결과)");bA.type="button";bA.disabled=busy;
