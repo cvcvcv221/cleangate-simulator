@@ -105,6 +105,7 @@ select,input[type=text]{font:inherit;border:1px solid var(--line);background:var
     <span class="mode" id="mode">AI: 준비한 판정</span>
     <button class="btn" type="button" id="auto">한 번에 진행</button>
     <button class="btn" type="button" id="reset">처음부터</button>
+    <button class="btn" type="button" id="newday" title="컨테이너 20대와 제비뽑기를 새로 만듭니다">다른 날 해 보기</button>
   </div>
 </header>
 
@@ -263,12 +264,14 @@ const ROWS=[
 ];
 let C=[],learnBase={};
 function score(o,ca,cr){return Math.round((.35*o+.25*CARGO[ca]+.25*SEASON+.15*CARRIER[cr])*100)/100}
-function init(){
-  C=ROWS.map(([no,v,org,ca,cr,soil,ph],i)=>({i,no,vessel:VESSELS[v],origin:org,cargo:ca,carrier:cr,soil:!!soil,photo:ph||19,score:score(ORIGIN[org],ca,cr),stage:"list"}));
+function init(rows){
+  rows=rows||ROWS;
+  C=rows.map(([no,v,org,ca,cr,soil,ph],i)=>({i,no,vessel:VESSELS[v],origin:org,cargo:ca,carrier:cr,soil:!!soil,photo:ph||19,score:score(ORIGIN[org],ca,cr),stage:"list"}));
   const sorted=[...C].sort((a,b)=>b.score-a.score);const topN=Math.round(C.length*.2);
   sorted.slice(0,topN).forEach(c=>c.why="top");
   C.forEach(c=>{if(!c.why&&c.soil)c.why="soil"});
-  const rnd=C.find(c=>c.no==="CGDU1000184"); if(rnd&&!rnd.why)rnd.why="random"; // 제비뽑기 5% (20대 중 1대)
+  if(rows===ROWS){const rnd=C.find(c=>c.no==="CGDU1000184"); if(rnd&&!rnd.why)rnd.why="random";} // 기본 화면은 발표 예시와 같게 고정
+  else{const pool=C.filter(c=>!c.why);const n=Math.max(1,Math.round(C.length*.05));for(let k=0;k<n&&pool.length;k++){pool.splice(Math.floor(Math.random()*pool.length),1)[0].why="random"}} // 제비뽑기 5%: 실제로 무작위
   C.forEach(c=>{c.open=!!c.why;c.ai=null;c.expert=null;c.plan=null;c.out=null});
   learnBase=JSON.parse(JSON.stringify(ORIGIN));
   sel2=null;sel3=null;lastPlan=null;$("traceOut").innerHTML="";
@@ -424,6 +427,22 @@ $("traceBtn").onclick=()=>{
   box.append(el("span","",all.map(x=>`${fmtNo(x.no)} ${x.origin===c.origin?"★":""} ${x.open?(x.out||"검사 중"):"통과·반출됨 → 도착지 통보"}`).join(" / ")));out.append(box)};
 $("go2").onclick=()=>{C.forEach(c=>{if(c.open&&c.stage==="list")c.stage="shoot"});C.forEach(c=>{if(!c.open)c.stage="passed"});setTab("shoot")};
 $("reset").onclick=()=>{init();setTab("list")};
+function randomRows(){
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const origins=Object.keys(ORIGIN),cargos=Object.keys(CARGO),carriers=Object.keys(CARRIER);
+  const CLEAN=[13,17,19,20],DIRTY=[14,16,18,21,22,23],SOIL=[15,24];
+  const used=new Set();let base=1000100+Math.floor(Math.random()*800000);
+  const rows=[];
+  for(let k=0;k<20;k++){
+    let no;do{no="CGDU"+String(base+Math.floor(Math.random()*90000)).padStart(7,"0")}while(used.has(no));used.add(no);
+    const org=pick(origins),ca=pick(cargos),cr=pick(carriers),soil=Math.random()<.05?1:0;
+    const risk=score(ORIGIN[org],ca,cr);
+    const ph=soil?pick(SOIL):(Math.random()<.15+.6*risk?pick(DIRTY.concat(SOIL)):pick(CLEAN));
+    rows.push([no,Math.floor(Math.random()*3),org,ca,cr,soil,ph]);
+  }
+  return rows;
+}
+$("newday").onclick=()=>{init(randomRows());setTab("list")};
 $("auto").onclick=()=>{ if(C.some(c=>c.open&&c.stage==="list"))$("go2").onclick();
   C.filter(c=>c.stage==="shoot").forEach(c=>{c.ai={...JSON.parse(JSON.stringify(PREP[c.photo])),live:false};if(needsExpert(c))c.stage="review";else{c.stage="done";c.expert="생략 (AI 정상·저위험)";c.out="반출 · 정상"}});
   C.filter(c=>c.stage==="review").forEach(c=>decide(c,plan(c.ai).verdict==="정상"?"clear":"confirm"));lastPlan=null;
