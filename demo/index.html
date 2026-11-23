@@ -90,6 +90,7 @@ select,input[type=text]{font:inherit;border:1px solid var(--line);background:var
 .foot a{color:var(--accent)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .credit{display:block;color:var(--muted,#667);font-size:12px;margin-top:-4px}
+.noimg{display:flex;align-items:center;justify-content:center;text-align:center;background:var(--panel);border:1px dashed var(--muted);color:var(--muted);font-size:13px;padding:12px;min-height:60px;border-radius:8px}
 </style>
 </head><body>
 
@@ -156,7 +157,7 @@ select,input[type=text]{font:inherit;border:1px solid var(--line);background:var
   <div class="learn" id="learn"></div>
 </section>
 
-<p class="foot">모든 사진은 실제 컨테이너 내부 사진입니다. 13 Claudio Elias(PD) · 14·15 U.S. Marine Corps, Lance Cpl. Eric Reyes(PD) · 16~19 Danny Cornelissen(출처 표시 조건, Wikimedia Commons) · 20~24 팀이 모은 테스트 사진(20·21 hz-containers.com). 설비 규모 계산은 <a href="https://cvcvcv221.github.io/cleangate-simulator/">2단 검사 시뮬레이터</a>에서 볼 수 있습니다. 팀 클린게이트 · 2026 스마트물류 문제해결 경진대회</p>
+<p class="foot">사진 13~19는 Wikimedia Commons에 공개된 실제 컨테이너 내부 사진입니다(13 Claudio Elias, PD · 14·15 U.S. Marine Corps, Lance Cpl. Eric Reyes, PD · 16~19 Danny Cornelissen, 출처 표시 조건). 20~24는 팀이 모은 테스트 사진입니다(20·21 hz-containers.com). AI 판정은 미리 준비한 결과이며, 컨테이너 번호·선박·선사는 예시입니다. 설비 규모 계산은 <a href="https://cvcvcv221.github.io/cleangate-simulator/">2단 검사 시뮬레이터</a>에서 볼 수 있습니다. 팀 클린게이트 · 2026 스마트물류 문제해결 경진대회</p>
 </div>
 
 <script>
@@ -204,7 +205,7 @@ const PHOTOS=[
  {id:16,label:"[실사] 바닥 보수판",real:1},{id:17,label:"[실사] 정상 (알루미늄 바닥)",real:1},{id:18,label:"[실사] 남은 물건",real:1},{id:19,label:"[실사] 정상 (나무 바닥)",real:1},
  {id:20,label:"[실사] 정상 (새 컨테이너)",real:1},{id:21,label:"[실사] 벽 부식·바닥 보수",real:1},{id:22,label:"[실사] 남은 포장재·톱밥",real:1},{id:23,label:"[실사] 곰팡이·녹물",real:1},{id:24,label:"[실사] 낙엽·흙",real:1}];
 const CREDITS={13:"Claudio Elias · 퍼블릭 도메인 · Wikimedia Commons",14:"U.S. Marine Corps (Lance Cpl. Eric Reyes) · 퍼블릭 도메인 · Wikimedia Commons",15:"U.S. Marine Corps (Lance Cpl. Eric Reyes) · 퍼블릭 도메인 · Wikimedia Commons",16:"Danny Cornelissen · 출처 표시 · Wikimedia Commons",17:"Danny Cornelissen · 출처 표시 · Wikimedia Commons",18:"Danny Cornelissen · 출처 표시 · Wikimedia Commons",19:"Danny Cornelissen · 출처 표시 · Wikimedia Commons",20:"팀 수집 사진 (hz-containers.com)",21:"팀 수집 사진 (hz-containers.com)",22:"팀 테스트 사진",23:"팀 테스트 사진",24:"팀 테스트 사진"};
-const REMOTE={15:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/3rd_MLG_Marines_Gain_Certification_in_Dry_Cargo_Container_Inspection_%288838057%29.jpg/960px-3rd_MLG_Marines_Gain_Certification_in_Dry_Cargo_Container_Inspection_%288838057%29.jpg",16:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Inside_of_a_container_1.jpg/960px-Inside_of_a_container_1.jpg",17:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Inside_of_a_container_4.jpg/960px-Inside_of_a_container_4.jpg",18:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Inside_of_a_container_5.jpg/960px-Inside_of_a_container_5.jpg",19:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Inside_of_a_container_2.jpg/960px-Inside_of_a_container_2.jpg"};
+const REMOTE={};
 const F=(category,name,severity,description,location,alive)=>({category,name,severity,description,location,alive:alive||"해당 없음"});
 const PREP={
  1:{quality:"양호",confidence:.92,findings:[],reason:"보이는 문제가 없어 반출 가능"},
@@ -377,7 +378,7 @@ function renderReview(){
   list.forEach(c=>{const p=plan(c.ai);q.append(qitem(c,sel3===c.i,`AI: ${p.verdict}`,()=>{sel3=c.i;lastPlan=null;render()}))});
   const v=$("reviewView");v.innerHTML="";const c=C[sel3];
   if(c==null||c.stage!=="review"){v.append(el("div","empty","확인할 컨테이너를 고르세요."));return}
-  const im=el("img","photo");im.src=imgSrc(c.photo);im.alt=`${fmtNo(c.no)} 내부 합성 사진`;v.append(im);
+  const im=el("img","photo");im.src=imgSrc(c.photo);im.alt=`${fmtNo(c.no)} 내부 사진`;v.append(im);
   const why=plan(c.ai).verdict==="정상"?(c.score>=.4?"AI는 정상으로 봤지만 위험 점수가 높아 사람이 한 번 더 봅니다.":"AI 확신도가 낮아 사람이 한 번 더 봅니다."):"AI가 문제를 의심했습니다. 사진과 근거를 보고 확정하세요.";
   v.append(el("p","hint",`${fmtNo(c.no)} · ${c.origin} · 점수 ${c.score.toFixed(2)} — ${why}`),aiBlock(c));
   const r=el("div","row");
@@ -459,6 +460,7 @@ function renderReviewQueueOnly(){const q=$("q3");q.innerHTML="";const list=C.fil
   list.forEach(c=>{const p=plan(c.ai);q.append(qitem(c,sel3===c.i,`AI: ${p.verdict}`,()=>{sel3=c.i;lastPlan=null;render()}))})}
 init();setTab("list");
 })();
+document.addEventListener("error",e=>{const t=e.target;if(t&&t.tagName==="IMG"){const d=document.createElement("div");d.className=(t.className||"")+" noimg";d.textContent=t.classList.contains("photo")?"사진을 불러오지 못했습니다. 판정은 그대로 진행됩니다.":"사진 없음";t.replaceWith(d)}},true);
 </script>
 
 </body></html>
