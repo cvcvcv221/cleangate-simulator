@@ -56,6 +56,8 @@ tr.sel{background:var(--soft)}
 .pill{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
 .p-ok{background:var(--accent-soft);color:var(--accent)} .p-warn{background:var(--warn-soft);color:var(--warn)}
 .p-bad{background:var(--bad-soft);color:var(--bad)} .p-info{background:var(--info-soft);color:var(--info)} .p-mute{background:var(--soft);color:var(--muted)}
+.sum{font-size:13.5px;font-weight:700;color:var(--ink);margin:6px 0 0}
+@media (max-width:640px){.hm{display:none}th,td{padding:6px 4px;white-space:normal;word-break:keep-all}table{font-size:12.5px}#tList .bar{display:none}#tList .pill{white-space:normal;font-size:11px}}
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
 @media (max-width:900px){.two{grid-template-columns:1fr}}
 .queue{display:flex;flex-direction:column;gap:8px}
@@ -120,8 +122,9 @@ select,input[type=text]{font:inherit;border:1px solid var(--line);background:var
 <!-- ① -->
 <section class="panel gap" id="tab-list">
   <div><h2>① 오늘의 반출 목록</h2>
-  <p class="hint">모든 컨테이너는 출구 카메라로 바깥을 촬영합니다. 점수 = 0.35×출발지 + 0.25×직전 화물 + 0.25×계절 + 0.15×선사 이력. 매일 점수 상위 20%와 제비뽑기 5%, 바깥에 흙이 찍힌 컨테이너만 문을 엽니다.</p></div>
-  <div class="tablewrap"><table id="tList"><thead><tr><th>컨테이너</th><th>배</th><th>출발지</th><th>직전 화물</th><th>선사</th><th>위험 점수</th><th>바깥 촬영</th><th>결정</th></tr></thead><tbody></tbody></table></div>
+  <p class="hint">모든 컨테이너는 출구 카메라로 바깥(흙, 훈증 경고 표지)을 촬영합니다. 점수 = 0.35×출발지 + 0.25×직전 화물 + 0.25×계절 + 0.15×선사 이력. 매일 점수 상위 20%와 제비뽑기 5%, 바깥에 흙이 찍힌 컨테이너만 문을 엽니다.</p></div>
+  <p class="sum" id="openSum"></p>
+  <div class="tablewrap"><table id="tList"><thead><tr><th>컨테이너</th><th class="hm">배</th><th>출발지</th><th class="hm">직전 화물</th><th class="hm">선사</th><th>위험 점수</th><th>바깥 촬영</th><th>결정</th></tr></thead><tbody></tbody></table></div>
   <div class="row"><button class="btn primary" type="button" id="go2">개장 대상을 현장으로 보내기 →</button><span class="hint">선사·컨테이너 번호·배 이름은 예시입니다.</span></div>
 </section>
 
@@ -245,7 +248,7 @@ const ROWS=[
  ["CGDU1000137",0,"중국 광저우","목재·석재","가나해운",0,21],
  ["CGDU1000142",0,"중국 광저우","농산물·식물","가나해운",0,15],
  ["CGDU1000158",1,"베트남 하이퐁","목재·석재","다라해운",0,22],
- ["CGDU1000163",1,"인도네시아 자카르타","농산물·식물","가나해운",0,20],
+ ["CGDU1000163",1,"인도네시아 자카르타","농산물·식물","가나해운",0,20,1],
  ["CGDU1000179",0,"중국 상하이","식품·사료","다라해운",0,0],
  ["CGDU1000184",2,"미국 로스앤젤레스","일반 공산품","마바해운",0,23],
  ["CGDU1000190",1,"태국 람차방","일반 공산품","마바해운",1,24],
@@ -267,7 +270,7 @@ let C=[],learnBase={};
 function score(o,ca,cr){return Math.round((.35*o+.25*CARGO[ca]+.25*SEASON+.15*CARRIER[cr])*100)/100}
 function init(rows){
   rows=rows||ROWS;
-  C=rows.map(([no,v,org,ca,cr,soil,ph],i)=>({i,no,vessel:VESSELS[v],origin:org,cargo:ca,carrier:cr,soil:!!soil,photo:ph||19,score:score(ORIGIN[org],ca,cr),stage:"list"}));
+  C=rows.map(([no,v,org,ca,cr,soil,ph,fum],i)=>({i,no,vessel:VESSELS[v],origin:org,cargo:ca,carrier:cr,soil:!!soil,fum:!!fum,gasOk:false,photo:ph||19,score:score(ORIGIN[org],ca,cr),stage:"list"}));
   const sorted=[...C].sort((a,b)=>b.score-a.score);const topN=Math.round(C.length*.2);
   sorted.slice(0,topN).forEach(c=>c.why="top");
   C.forEach(c=>{if(!c.why&&c.soil)c.why="soil"});
@@ -328,10 +331,12 @@ function renderList(){
   const tb=$("tList").tBodies[0];tb.innerHTML="";
   [...C].sort((a,b)=>b.score-a.score).forEach(c=>{
     const tr=el("tr",c.open?"sel":"");
-    tr.append(el("td","num",fmtNo(c.no)),el("td","",c.vessel),el("td","",c.origin),el("td","",c.cargo),el("td","",c.carrier));
-    const s=el("td","num");const bar=el("span","bar");bar.style.width=Math.round(c.score*90)+"px";s.append(bar,document.createTextNode(c.score.toFixed(2)));tr.append(s);
-    tr.append(el("td","",c.soil?"흙 찍힘":"이상 없음"));
+    tr.append(el("td","num",fmtNo(c.no)),el("td","hm",c.vessel),el("td","",c.origin),el("td","hm",c.cargo),el("td","hm",c.carrier));
+    const s=el("td","num");const bar=el("span","bar");bar.style.width=Math.round(c.score*(innerWidth<640?40:90))+"px";s.append(bar,document.createTextNode(c.score.toFixed(2)));tr.append(s);
+    tr.append(el("td","",[c.soil?"흙 찍힘":"",c.fum?"훈증 표지":""].filter(Boolean).join(" · ")||"이상 없음"));
     const [t,k]=stagePill(c);const td=el("td");td.append(el("span","pill "+k,t));tr.append(td);tb.append(tr)});
+  const n=k=>C.filter(c=>c.why===k).length,fu=C.filter(c=>c.fum&&c.open).length;
+  $("openSum").textContent=`오늘 ${C.length}대 중 개장 ${C.filter(c=>c.open).length}대 = 점수 상위 ${n("top")}대(20%) + 제비뽑기 ${n("random")}대(5%)`+(n("soil")?` + 바깥 흙 ${n("soil")}대`:"")+(fu?` · 이 중 훈증 표지 ${fu}대는 열기 전에 가스부터 잽니다`:"");
   $("go2").disabled=!C.some(c=>c.open&&c.stage==="list");
 }
 function qitem(c,pressed,sub,onclick){const b=el("button","qitem");b.type="button";b.setAttribute("aria-pressed",pressed);
@@ -340,15 +345,21 @@ function qitem(c,pressed,sub,onclick){const b=el("button","qitem");b.type="butto
 function renderShoot(){
   const q=$("q2");q.innerHTML="";const list=C.filter(c=>c.open&&c.stage==="shoot");
   if(!list.length)q.append(el("div","empty",C.some(c=>c.open&&c.stage==="list")?"① 반출 목록에서 개장 대상을 현장으로 보내세요.":"판정할 컨테이너가 없습니다."));
-  list.forEach(c=>q.append(qitem(c,sel2===c.i,`${c.origin} · ${WHY[c.why][0].replace("개장 · ","")}`,()=>{sel2=c.i;render()})));
+  list.forEach(c=>q.append(qitem(c,sel2===c.i,`${c.origin} · ${WHY[c.why][0].replace("개장 · ","")}${c.fum?" · 훈증 표지":""}`,()=>{sel2=c.i;render()})));
   const v=$("shootView");v.innerHTML="";const c=C[sel2];
   if(c==null||c.stage!=="shoot"){v.append(el("div","empty","왼쪽에서 컨테이너를 고르세요."));return}
   const im=el("img","photo");im.src=imgSrc(c.photo);im.alt=`${fmtNo(c.no)} 내부 사진: ${PHOTOS[c.photo-1].label}`;v.append(im);if(CREDITS[c.photo])v.append(el("small","credit","사진 출처: "+CREDITS[c.photo]));
   const r=el("div","row");const lb=el("label","","내부 사진");lb.htmlFor="pick";const s=el("select");s.id="pick";
   PHOTOS.filter(p=>p.real).forEach(p=>{const o=el("option","",`${p.id}. ${p.label}`);o.value=p.id;if(p.id===c.photo)o.selected=true;s.append(o)});
   s.onchange=()=>{c.photo=+s.value;render()};r.append(lb,s);v.append(r);
+  v.append(el("p","hint","공개된 컨테이너 내부 사진 중 벌레가 찍힌 사진은 없어, 생물(해충) 판정 예시는 발표 슬라이드 8장으로 대신합니다. 흙은 해충 알이 섞일 수 있어 생물 경로로 처리합니다."));
+  if(c.fum){const g=el("div","verdict "+(c.gasOk?"v-ok":"v-safe"));
+    g.append(el("b","",c.gasOk?"가스 측정 완료: 기준 이하":"훈증 경고 표지 확인됨: 문을 열기 전에 가스부터 잽니다"),
+      el("span","",c.gasOk?"환기 기준을 넘지 않아 문을 열고 촬영했습니다. 작업자는 안에 들어가지 않고 문 앞에서만 찍습니다.":"출구 카메라가 문의 훈증 경고 표지를 찍었습니다. 휴대용 측정기로 문틈 가스를 재고, 기준을 넘으면 환기한 뒤 엽니다."));
+    if(!c.gasOk){const gb=el("button","btn","가스 측정: 기준 이하 확인");gb.type="button";gb.onclick=()=>{c.gasOk=true;render()};g.append(gb)}
+    v.append(g)}
   const dl=el("dl","kv");[["출발지",c.origin],["직전 화물",c.cargo],["선사",c.carrier],["위험 점수",c.score.toFixed(2)]].forEach(([a,b])=>{dl.append(el("dt","",a),el("dd","",b))});v.append(dl);
-  const r2=el("div","row");const bA=el("button","btn primary",sample?"실시간 AI 판정":"AI 판정 (준비한 결과)");bA.type="button";bA.disabled=busy;
+  const r2=el("div","row");const bA=el("button","btn primary",sample?"실시간 AI 판정":"AI 판정 (준비한 결과)");bA.type="button";bA.disabled=busy||(c.fum&&!c.gasOk);
   const st=el("span","status");st.id="st2";r2.append(bA);
   if(sample){const bP=el("button","btn","준비한 결과로 보기");bP.type="button";bP.onclick=()=>judge(c,false);r2.append(bP)}
   v.append(r2,st);bA.onclick=()=>judge(c,!!sample);
@@ -439,13 +450,13 @@ function randomRows(){
     const org=pick(origins),ca=pick(cargos),cr=pick(carriers),soil=Math.random()<.05?1:0;
     const risk=score(ORIGIN[org],ca,cr);
     const ph=soil?pick(SOIL):(Math.random()<.15+.6*risk?pick(DIRTY.concat(SOIL)):pick(CLEAN));
-    rows.push([no,Math.floor(Math.random()*3),org,ca,cr,soil,ph]);
+    rows.push([no,Math.floor(Math.random()*3),org,ca,cr,soil,ph,Math.random()<.1?1:0]);
   }
   return rows;
 }
 $("newday").onclick=()=>{init(randomRows());setTab("list")};
 $("auto").onclick=()=>{ if(C.some(c=>c.open&&c.stage==="list"))$("go2").onclick();
-  C.filter(c=>c.stage==="shoot").forEach(c=>{c.ai={...JSON.parse(JSON.stringify(PREP[c.photo])),live:false};if(needsExpert(c))c.stage="review";else{c.stage="done";c.expert="생략 (AI 정상·저위험)";c.out="반출 · 정상"}});
+  C.filter(c=>c.stage==="shoot").forEach(c=>{c.gasOk=true;c.ai={...JSON.parse(JSON.stringify(PREP[c.photo])),live:false};if(needsExpert(c))c.stage="review";else{c.stage="done";c.expert="생략 (AI 정상·저위험)";c.out="반출 · 정상"}});
   C.filter(c=>c.stage==="review").forEach(c=>decide(c,plan(c.ai).verdict==="정상"?"clear":"confirm"));lastPlan=null;
   C.filter(c=>c.stage==="shoot").forEach(c=>{c.ai={...JSON.parse(JSON.stringify(PREP[c.photo])),live:false};c.stage="review"});
   setTab("log")};
