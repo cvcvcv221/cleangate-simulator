@@ -405,14 +405,18 @@ function qitem(c,pressed,sub,onclick){const b=el("button","qitem");b.type="butto
   const [t,k]=stagePill(c);b.append(im,mid,el("span","pill "+k,t));b.onclick=onclick;return b}
 // ② 탭을 처음 열면 AI가 한 대씩 판정하는 모습을 보여 주고, 끝나면 ③ 검사원 확인으로 넘어감
 async function runJudging(){
+  try{await runJudgingInner()}
+  catch(err){console.error(err);judgeAllNow();judging=false;$("ovl").hidden=true;sel3=null;lastPlan=null;setTab("review")}
+}
+async function runJudgingInner(){
   if(judged||judging)return;judging=true;const my=runId;
   const list=C.filter(c=>c.open&&c.stage==="wait").sort((a,b)=>b.score-a.score);
   const ov=$("ovl"),ul=$("ovList");ul.innerHTML="";$("ovDone").textContent="";$("ovSpin").classList.remove("done");
   $("ovTitle").textContent="AI가 내부 사진을 판정하는 중입니다";$("ovBar").style.width="0%";ov.hidden=false;
   for(let k=0;k<list.length;k++){const c=list[k];
-    c.stage="judging";$("ovImg").src=imgSrc(c.photo);$("ovNo").textContent=fmtNo(c.no);
+    c.stage="judging";const oi=$("ovImg");if(oi)oi.src=imgSrc(c.photo);$("ovNo").textContent=fmtNo(c.no);
     $("ovSub").textContent=`${c.origin} · 점수 ${c.score.toFixed(2)} · ${k+1} / ${list.length}대째 판정 중…`;render();
-    await sleep(900);if(my!==runId)return;
+    await sleep(700);if(my!==runId)return;
     autoJudge(c);const p=plan(c.ai);const li=el("li");
     li.append(el("span","num",fmtNo(c.no)),el("span","",`${p.verdict} · 확신도 ${Math.round(c.ai.confidence*100)}% → ${c.stage==="review"?"검사원 확인":"자동 반출"}`));ul.append(li);
     $("ovBar").style.width=Math.round((k+1)/list.length*100)+"%";render()}
@@ -420,7 +424,7 @@ async function runJudging(){
   const rv=C.filter(c=>c.stage==="review").length,ok=list.length-rv;
   $("ovSpin").classList.add("done");$("ovTitle").textContent="판정 완료";$("ovSub").textContent=`${list.length}대 판정을 마쳤습니다`;
   $("ovDone").textContent=`검사원 확인 ${rv}건 · 자동 반출 ${ok}건 → ③ 검사원 확인으로 이동합니다`;
-  await sleep(1600);if(my!==runId)return;
+  await sleep(1300);if(my!==runId)return;
   ov.hidden=true;sel3=null;lastPlan=null;setTab("review");
   requestAnimationFrame(()=>{const r=document.querySelector("#reviewView .row");if(r)r.scrollIntoView({block:"nearest"})});
 }
@@ -564,7 +568,7 @@ function renderReviewQueueOnly(){const q=$("q3");q.innerHTML="";const list=C.fil
   list.forEach(c=>{const p=plan(c.ai);q.append(qitem(c,false,`AI: ${p.verdict}`,()=>{sel3=c.i;lastPlan=null;render()}))})}
 init();setTab("list");
 })();
-document.addEventListener("error",e=>{const t=e.target;if(t&&t.tagName==="IMG"){const d=document.createElement("div");d.className=(t.className||"")+" noimg";d.textContent=t.classList.contains("photo")?"사진을 불러오지 못했습니다. 판정은 그대로 진행됩니다.":"사진 없음";t.replaceWith(d)}},true);
+document.addEventListener("error",e=>{const t=e.target;if(t&&t.id==="ovImg"){t.removeAttribute("src");return}if(t&&t.tagName==="IMG"){const d=document.createElement("div");d.className=(t.className||"")+" noimg";d.textContent=t.classList.contains("photo")?"사진을 불러오지 못했습니다. 판정은 그대로 진행됩니다.":"사진 없음";t.replaceWith(d)}},true);
 </script>
 
 </body></html>
