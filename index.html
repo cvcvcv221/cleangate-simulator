@@ -1,290 +1,518 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CleanGate 2단 검사 시뮬레이터</title>
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CleanGate 현장 흐름 데모</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Layout: 조작판(좌) + 결과판(우). 항만 관제 화면처럼 숫자가 주인공, 목표선과 비교해 상태를 색과 글로 표시 */
+/* Layout: 단계 탭(① 반출 목록 → ② 촬영·AI → ③ 전문가 확인 → ④ 이력·추적). 항만 관제 화면처럼 상태를 색과 글로 함께 표시 */
 :root{
-  --bg:#F3F5F2; --panel:#FBFCFA; --ink:#14212F; --body:#3D4A57; --muted:#66727D; --line:#D3DBD6;
+  --bg:#F3F5F2; --panel:#FBFCFA; --ink:#14212F; --body:#3D4A57; --muted:#66727D; --line:#D3DBD6; --soft:#E9EEEA;
   --accent:#157A62; --accent-soft:#DCEEE7; --warn:#B85412; --warn-soft:#F8E5D6; --bad:#B3261E; --bad-soft:#F7DEDC;
-  --bar:#B9C4BE; --bar-hi:#157A62;
+  --info:#2D5DA8; --info-soft:#DFE8F6;
   --f-text:'Noto Sans KR',system-ui,sans-serif; --f-num:'JetBrains Mono',ui-monospace,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0F1A24; --panel:#152331; --ink:#EAF0EC; --body:#C2CFC9; --muted:#93A39C; --line:#2A3B49;
+  --bg:#0F1A24; --panel:#152331; --ink:#EAF0EC; --body:#C2CFC9; --muted:#93A39C; --line:#2A3B49; --soft:#1B2B3A;
   --accent:#5CC6A3; --accent-soft:#18392F; --warn:#F0A066; --warn-soft:#3A2A1C; --bad:#F2928B; --bad-soft:#3B2120;
-  --bar:#3B4E5C; --bar-hi:#5CC6A3; color-scheme:dark}}
+  --info:#8FB3F0; --info-soft:#1C2C46; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0F1A24; --panel:#152331; --ink:#EAF0EC; --body:#C2CFC9; --muted:#93A39C; --line:#2A3B49;
+  --bg:#0F1A24; --panel:#152331; --ink:#EAF0EC; --body:#C2CFC9; --muted:#93A39C; --line:#2A3B49; --soft:#1B2B3A;
   --accent:#5CC6A3; --accent-soft:#18392F; --warn:#F0A066; --warn-soft:#3A2A1C; --bad:#F2928B; --bad-soft:#3B2120;
-  --bar:#3B4E5C; --bar-hi:#5CC6A3; color-scheme:dark}
+  --info:#8FB3F0; --info-soft:#1C2C46; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-text);font-size:15px;line-height:1.5;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
-.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-text);font-size:15px;line-height:1.5;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px}
 .eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--accent)}
-h1{font-size:28px;font-weight:900;margin:2px 0 0;text-wrap:balance}
-.sub{color:var(--body);max-width:62ch;margin:4px 0 0}
-.grid{display:grid;grid-template-columns:330px 1fr;gap:20px;align-items:start}
-@media (max-width:860px){.grid{grid-template-columns:1fr}}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;min-width:0}
-.panel h2{font-size:15px;font-weight:700;margin:0 0 12px}
-.ctl{display:flex;flex-direction:column;gap:4px;padding:10px 0;border-top:1px solid var(--line)}
-.ctl:first-of-type{border-top:none;padding-top:0}
-.ctl label{display:flex;justify-content:space-between;gap:8px;font-weight:500}
-.ctl output{font-family:var(--f-num);font-weight:700;color:var(--accent)}
-.ctl small{color:var(--muted);font-size:12.5px}
-input[type=range]{width:100%;accent-color:var(--accent)}
-.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.seg button{font:inherit;border:0;background:transparent;color:var(--body);padding:8px;cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--accent);color:var(--panel);font-weight:700}
-.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+h1{font-size:26px;font-weight:900;margin:2px 0 0}
+.sub{color:var(--body);max-width:70ch;margin:4px 0 0}
+.mode{font-size:13px;font-weight:700;border-radius:999px;padding:4px 12px;border:1px solid var(--line);background:var(--panel)}
+.mode.live{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+nav.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:720px){nav.steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+nav.steps button{font:inherit;text-align:left;border:1px solid var(--line);background:var(--panel);color:var(--body);border-radius:12px;padding:10px 14px;cursor:pointer}
+nav.steps button b{display:block;color:var(--ink);font-size:15px}
+nav.steps button small{font-size:12.5px;color:var(--muted)}
+nav.steps button[aria-current="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+nav.steps .cnt{font-family:var(--f-num);font-weight:700;color:var(--accent)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;min-width:0}
+.panel h2{font-size:16px;margin:0 0 4px}
+.hint{color:var(--muted);font-size:13px;margin:0}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:9px;padding:7px 12px;cursor:pointer}
-.btn:hover{border-color:var(--accent)}
-button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-@media (max-width:520px){.kpis{grid-template-columns:1fr}}
-.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.kpi .k{font-size:13px;color:var(--muted);font-weight:500}
-.kpi .v{font-family:var(--f-num);font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
-.kpi .d{font-size:13px;color:var(--body)}
-.pill{align-self:flex-start;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px}
-.ok{background:var(--accent-soft);color:var(--accent)} .mid{background:var(--warn-soft);color:var(--warn)} .no{background:var(--bad-soft);color:var(--bad)}
-.chart{overflow-x:auto}
-.chart svg{display:block;width:100%;min-width:520px;height:auto}
-.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);margin-top:6px}
-.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
-.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.step{border-left:3px solid var(--line);padding:4px 0 4px 10px}
-.step b{display:block;font-family:var(--f-num);font-size:20px}
-.step span{font-size:13px;color:var(--muted)}
-.note{font-size:13px;color:var(--muted);max-width:90ch}
-.busy{opacity:.55;transition:opacity .2s}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
-.guide{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px 20px}
-.guide summary{cursor:pointer;font-weight:700;padding:12px 0;list-style:none}
-.guide summary::-webkit-details-marker{display:none}
-.guide summary::before{content:"▸ ";color:var(--accent)}
-.guide[open] summary::before{content:"▾ "}
-.guide .gbody{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;padding:4px 0 18px}
-.guide h3{font-size:14px;margin:0 0 6px;color:var(--accent)}
-.guide ol,.guide ul{margin:0;padding-left:20px;color:var(--body);font-size:14px}
-.guide li{margin:3px 0}
-.guide b{color:var(--ink)}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--panel);border-color:var(--accent);font-weight:700}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12.5px;color:var(--muted);font-weight:500}
+td.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+tr.sel{background:var(--soft)}
+.bar{display:inline-block;height:8px;border-radius:4px;background:var(--accent);vertical-align:middle;margin-right:6px}
+.pill{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.p-ok{background:var(--accent-soft);color:var(--accent)} .p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-bad{background:var(--bad-soft);color:var(--bad)} .p-info{background:var(--info-soft);color:var(--info)} .p-mute{background:var(--soft);color:var(--muted)}
+.alertbar{background:var(--warn-soft);color:var(--warn);border-left:4px solid var(--warn);border-radius:10px;padding:10px 14px}
+.alertbar b{display:block;font-size:15px;margin-bottom:4px}.alertbar ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink)}
+tr.warnrow td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+.delta{color:var(--muted);font-size:11.5px;margin-left:4px}
+.sum{font-size:13.5px;font-weight:700;color:var(--ink);margin:6px 0 0}
+@media (max-width:640px){.hm{display:none}th,td{padding:6px 4px;white-space:normal;word-break:keep-all}table{font-size:12.5px}#tList .bar{display:none}#tList .pill{white-space:normal;font-size:11px}}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+.queue{display:flex;flex-direction:column;gap:8px}
+.qitem{font:inherit;text-align:left;display:grid;grid-template-columns:72px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--panel);color:var(--ink);cursor:pointer}
+.qitem[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.qitem img{width:72px;height:54px;object-fit:cover;border-radius:6px}
+.qitem .no{font-family:var(--f-num);font-weight:700;font-size:14px}
+.qitem small{color:var(--muted);font-size:12.5px;display:block}
+.photo{width:100%;max-width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:var(--soft)}
+.verdict{border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.verdict b{font-size:18px}
+.v-ok{background:var(--accent-soft);color:var(--accent)} .v-bio{background:var(--bad-soft);color:var(--bad)}
+.v-hyg,.v-safe{background:var(--warn-soft);color:var(--warn)} .v-struct,.v-unk{background:var(--info-soft);color:var(--info)}
+.finds{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.finds li{border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.finds li b{font-size:14px}
+.finds li span.d{display:block;font-size:13px;color:var(--body)}
+.steps-plan{margin:0;padding-left:20px;font-size:14px;color:var(--body)}
+.steps-plan li{margin:3px 0}
+.steps-plan b{color:var(--ink)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+select,input[type=text]{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 8px}
+.status{font-size:13px;color:var(--muted);min-height:1.5em}
+.learn{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.lcard{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.lcard b{font-family:var(--f-num)}
+.lcard small{display:block;color:var(--muted);font-size:12.5px}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:24px;text-align:center;color:var(--muted)}
+.gap{display:flex;flex-direction:column;gap:12px}
+.foot{font-size:12.5px;color:var(--muted)}
+.foot a{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.credit{display:block;color:var(--muted,#667);font-size:12px;margin-top:-4px}
+.noimg{display:flex;align-items:center;justify-content:center;text-align:center;background:var(--panel);border:1px dashed var(--muted);color:var(--muted);font-size:13px;padding:12px;min-height:60px;border-radius:8px}
 </style>
 </head><body>
-
 
 
 <div class="wrap">
 <header>
   <div>
-    <div class="eyebrow">CLEANGATE · 시연용</div>
-    <h1>2단 검사 시뮬레이터</h1>
-    <p class="sub">부산항 수입 빈 컨테이너가 하루 동안 게이트·검사 레인·세척 라인을 거치는 과정을 컴퓨터로 반복 운영합니다. 조건을 바꾸면 대기 시간과 적발 수가 바로 다시 계산됩니다.</p>
+    <div class="eyebrow">CLEANGATE · 시연용 시제품</div>
+    <h1>현장 흐름 데모</h1>
+    <p class="sub">오늘 반출되는 빈 컨테이너에 점수를 매기고, 고른 컨테이너만 열어 AI가 1차 판정한 뒤, 의심 건을 전문가가 확인하고, 그 결과가 다음 선별에 반영되는 과정을 그대로 따라갑니다.</p>
   </div>
-  <div class="btns" style="margin:0">
-    <button class="btn" id="pBase" type="button">기준안</button>
-    <button class="btn" id="pPeak" type="button">최대 물동월(3월)</button>
-    <button class="btn" id="pDirty" type="button">불량률 12.9%</button>
-    <button class="btn" id="pRand" type="button">위험 점수 무효</button>
+  <div class="row">
+    <span class="mode" id="mode">AI: 준비한 판정</span>
+    <button class="btn" type="button" id="auto">한 번에 진행</button>
+    <button class="btn" type="button" id="reset">처음부터</button>
+    <button class="btn" type="button" id="newday" title="오늘 판정 결과로 출발지 점수를 고친 뒤, 다음 날 컨테이너 20대를 새로 받습니다">다음 날로 (결과 반영) →</button>
   </div>
 </header>
 
-<details class="guide" id="guide">
-  <summary>사용법 보기</summary>
-  <div class="gbody">
-    <div>
-      <h3>1. 이 화면이 하는 일</h3>
-      <ul>
-        <li>부산항 수입 빈 컨테이너가 출구 촬영 → 위험 점수 선별 → 개장·AI 판정 → 검사원 확인 → 세척을 거치는 하루를 컴퓨터로 여러 번 돌려 평균을 보여 줍니다.</li>
-        <li>왼쪽 조건을 바꾸면 0.3초 뒤 자동으로 다시 계산됩니다. 따로 누를 버튼은 없습니다.</li>
-      </ul>
+<nav class="steps" aria-label="단계">
+  <button type="button" data-tab="list"><b>① 반출 목록·점수</b><small>오늘 <span class="cnt" id="c1">0</span>대 중 개장 <span class="cnt" id="c1b">0</span>대</small></button>
+  <button type="button" data-tab="shoot"><b>② 현장 촬영·AI 판정</b><small>판정 대기 <span class="cnt" id="c2">0</span>대</small></button>
+  <button type="button" data-tab="review"><b>③ 전문가 확인</b><small>확인 대기 <span class="cnt" id="c3">0</span>건</small></button>
+  <button type="button" data-tab="log"><b>④ 이력·추적</b><small>처리 완료 <span class="cnt" id="c4">0</span>대</small></button>
+</nav>
+
+<!-- ① -->
+<section class="panel gap" id="tab-list">
+  <div><h2>① 오늘의 반출 목록</h2>
+  <p class="hint">모든 컨테이너는 출구 카메라로 바깥(흙, 훈증 경고 표지)을 촬영합니다. 점수 = 0.35×출발지 + 0.25×직전 화물 + 0.25×계절 + 0.15×선사 이력. 매일 점수 상위 20%와 무작위 선별 5%만 문을 엽니다. 바깥에 흙이나 훈증 경고 표지가 찍히면 경고를 띄웁니다.</p></div>
+  <div id="gateAlert"></div>
+  <div id="dayNote"></div>
+  <p class="sum" id="openSum"></p>
+  <div class="tablewrap"><table id="tList"><thead><tr><th>컨테이너</th><th class="hm">배</th><th>출발지</th><th class="hm">직전 화물</th><th class="hm">선사</th><th>위험 점수</th><th>바깥 촬영</th><th>결정</th></tr></thead><tbody></tbody></table></div>
+  <div class="row"><button class="btn primary" type="button" id="go2">개장 대상을 현장으로 보내기 →</button><span class="hint">선사·컨테이너 번호·배 이름은 예시입니다.</span></div>
+</section>
+
+<!-- ② -->
+<section class="panel" id="tab-shoot" hidden>
+  <div class="two">
+    <div class="gap">
+      <div><h2>② 개장 대상</h2><p class="hint">작업자가 문을 열고 안을 촬영합니다. 사진을 고르면 AI가 1차로 판정합니다.</p></div>
+      <div class="queue" id="q2"></div>
     </div>
-    <div>
-      <h3>2. 위쪽 버튼 (미리 정해 둔 조건)</h3>
-      <ul>
-        <li><b>기준안</b>: 하루 3,855대, 검사 레인 6개, 세척 4라인, 불량률 5%</li>
-        <li><b>최대 물동월(3월)</b>: 하루 4,397대, 레인 7개, 세척 5라인</li>
-        <li><b>불량률 12.9%</b>: 2022 상반기 조사 수준, 레인 7개, 세척 9라인</li>
-        <li><b>위험 점수 무효</b>: 점수가 제비뽑기만큼만 맞을 때 (포착률 20%)</li>
-      </ul>
-    </div>
-    <div>
-      <h3>3. 왼쪽 조건</h3>
-      <ul>
-        <li><b>개장 방식</b>: 선별(상위 20% + 무작위 5%) 또는 전수(전부 열기)</li>
-        <li><b>하루 물량</b>: 하루에 나가는 빈 컨테이너 수</li>
-        <li><b>검사 레인 / 세척 라인</b>: 동시에 검사·세척할 수 있는 자리 수</li>
-        <li><b>불량률</b>: 흙·쓰레기·곰팡이·파손·생물이 있는 비율</li>
-        <li><b>선별 포착률</b>: 불량 중 위험 점수 상위 20%에 드는 비율. 20%면 무작위와 같음</li>
-        <li><b>AI 탐지율</b>: 열어 본 불량 중 AI가 찾아내는 비율</li>
-        <li><b>세척장 이동</b>: 검사 구역에서 세척장까지 편도 시간</li>
-      </ul>
-    </div>
-    <div>
-      <h3>4. 결과 읽는 법</h3>
-      <ul>
-        <li><b>검사 대기·오염 처리</b>: 10대 중 9대가 끝나는 시간. 초록 = 목표 달성, 주황 = 근접, 빨강 = 초과</li>
-        <li><b>반출 전 적발</b>: 하루·1년 동안 나가기 전에 잡는 불량 수</li>
-        <li><b>개장 1건당 적발률</b>: 문을 한 번 열 때 불량을 잡을 확률. "무작위 개장의 ○배"가 위험 점수의 효과</li>
-        <li><b>시간대별 대기 줄</b>: 낮(초록 막대)에 줄이 몰리는 모습</li>
-      </ul>
-    </div>
-    <div>
-      <h3>5. 시연 순서 (약 1분)</h3>
-      <ol>
-        <li>기준안 → 대기 약 7분, 하루 약 60건 적발 확인</li>
-        <li>검사 레인을 6 → 5로 → 대기가 20분 넘게 늘어남</li>
-        <li>위험 점수 무효 → 적발이 절반 이하로, 배수가 1.0배로</li>
-        <li>세척장 이동 60분 → 오염 처리가 늘어도 4시간 안</li>
-        <li>전수 개장 → 레인 21개가 필요함을 확인</li>
-      </ol>
-    </div>
-    <div>
-      <h3>6. 알아 둘 점</h3>
-      <ul>
-        <li>하루 물량은 부산항만공사 2025년 실데이터, 불량률·포착률·탐지율·처리 시간은 공개 자료가 없어 가정한 값입니다.</li>
-        <li>빠른 화면 표시를 위해 4일 × 6회 반복으로 계산해, 30회 반복한 보고서 값과 소수점 차이가 납니다.</li>
-        <li>이 파일 하나만 내려받아 인터넷 없이 열어도 계산됩니다.</li>
-      </ul>
-    </div>
+    <div class="gap" id="shootView"><div class="empty">왼쪽에서 컨테이너를 고르세요.</div></div>
   </div>
-</details>
+</section>
 
-<div class="grid">
-  <section class="panel" aria-label="조건">
-    <h2>운영 조건</h2>
-    <div class="ctl"><span style="font-weight:500">개장 방식</span>
-      <div class="seg" role="group" aria-label="개장 방식">
-        <button type="button" id="mSel" aria-pressed="true">선별 개장</button>
-        <button type="button" id="mAll" aria-pressed="false">전수 개장</button>
-      </div>
-      <small>선별: 위험 점수 상위 20% + 나머지 중 무작위 5%</small></div>
-    <div class="ctl"><label for="daily">하루 물량 <output id="o_daily"></output></label>
-      <input type="range" id="daily" min="3000" max="4500" step="1" value="3855"><small>2025년 실적: 평균 3,855대, 3월 4,397대</small></div>
-    <div class="ctl"><label for="stations">검사 레인 <output id="o_stations"></output></label>
-      <input type="range" id="stations" min="3" max="24" step="1" value="6"></div>
-    <div class="ctl"><label for="lanes">세척 라인 <output id="o_lanes"></output></label>
-      <input type="range" id="lanes" min="2" max="12" step="1" value="4"></div>
-    <div class="ctl"><label for="prev">불량률 <output id="o_prev"></output></label>
-      <input type="range" id="prev" min="2" max="20" step="0.1" value="5"><small>가정. 2022 상반기 표본은 12.9%</small></div>
-    <div class="ctl"><label for="capture">선별 포착률 <output id="o_capture"></output></label>
-      <input type="range" id="capture" min="20" max="80" step="5" value="50"><small>불량 중 위험 상위 20%에 드는 비율. 20%면 무작위와 같음</small></div>
-    <div class="ctl"><label for="sens">AI 탐지율 <output id="o_sens"></output></label>
-      <input type="range" id="sens" min="30" max="90" step="5" value="60"><small>가정. 호주 외부 촬영 시범 약 58%</small></div>
-    <div class="ctl"><label for="travel">세척장 이동 <output id="o_travel"></output></label>
-      <input type="range" id="travel" min="0" max="120" step="10" value="0"><small>검사 구역 → 협약 세척장 편도 시간</small></div>
-  </section>
-
-  <section style="display:flex;flex-direction:column;gap:16px;min-width:0" id="out" aria-live="polite">
-    <div class="kpis">
-      <div class="kpi"><span class="k">검사 대기 (10대 중 9대 기준)</span><span class="v" id="r_wait">–</span><span class="pill" id="s_wait"></span><span class="d">목표 10분 이내 (K5)</span></div>
-      <div class="kpi"><span class="k">오염 처리 (10대 중 9대 기준)</span><span class="v" id="r_wash">–</span><span class="pill" id="s_wash"></span><span class="d" id="d_wash">목표 4시간 이내 (K6)</span></div>
-      <div class="kpi"><span class="k">반출 전 적발</span><span class="v" id="r_det">–</span><span class="pill ok" id="s_det"></span><span class="d" id="d_det"></span></div>
-      <div class="kpi"><span class="k">개장 1건당 적발률</span><span class="v" id="r_eff">–</span><span class="pill" id="s_eff"></span><span class="d" id="d_eff"></span></div>
+<!-- ③ -->
+<section class="panel" id="tab-review" hidden>
+  <div class="two">
+    <div class="gap">
+      <div><h2>③ 전문가 확인 대기</h2><p class="hint">AI가 의심했거나, 점수가 높은데 정상으로 본 컨테이너만 올라옵니다. 같은 레인에서 확인합니다.</p></div>
+      <div class="queue" id="q3"></div>
     </div>
+    <div class="gap" id="reviewView"><div class="empty">확인할 컨테이너를 고르세요.</div></div>
+  </div>
+</section>
 
-    <div class="panel">
-      <h2>하루 흐름 (평균)</h2>
-      <div class="flow" id="flow"></div>
-    </div>
+<!-- ④ -->
+<section class="panel gap" id="tab-log" hidden>
+  <div><h2>④ 이력·추적</h2><p class="hint">모든 판정은 컨테이너 번호로 남습니다. 내륙에서 해충이 발견되면 같은 배로 온 컨테이너를 바로 찾습니다.</p></div>
+  <div class="row"><label for="trace">컨테이너 번호</label><input type="text" id="trace" placeholder="예: CGDU 100013 7" autocomplete="off"><button class="btn" type="button" id="traceBtn">같은 배 조회</button></div>
+  <div id="traceOut"></div>
+  <div class="tablewrap"><table id="tLog"><thead><tr><th>컨테이너</th><th>배</th><th>AI 판정</th><th>전문가</th><th>처리</th><th>반출</th></tr></thead><tbody></tbody></table></div>
+  <div><h2 style="margin-top:8px">판정 결과가 다음 점수에 반영되는 모습</h2><p class="hint">출발지별로 열어 본 수와 확인된 불량을 쌓아 출발지 점수를 고칩니다(과거 값 5건 분량과 섞어 급하게 바뀌지 않게 함).</p></div>
+  <div class="learn" id="learn"></div>
+</section>
 
-    <div class="panel">
-      <h2>시간대별 검사 대기 줄</h2>
-      <div class="chart" id="chart"></div>
-      <div class="legend"><span><i class="sw" style="background:var(--bar-hi)"></i>주간 08~17시 (하루 도착의 72%)</span><span><i class="sw" style="background:var(--bar)"></i>그 외 시간</span><span>막대 = 검사 레인 앞에서 기다리는 컨테이너 수(평균)</span></div>
-    </div>
-
-    <p class="note">파이썬 제출 코드(src/sim_two_stage.py)와 같은 규칙의 이산사건 시뮬레이션입니다. 화면에서는 빠르게 보여 주기 위해 4일(첫날 제외) × 6회 반복으로 계산해, 30회 반복한 보고서 값과 소수점 차이가 날 수 있습니다. 불량률·포착률·탐지율·처리 시간(검사 2~6분, 세척 30~60분, 소독 10~25분)은 공개 자료가 없어 가정한 값입니다.</p>
-  </section>
-</div>
+<p class="foot">사진 13~19는 Wikimedia Commons에 공개된 실제 컨테이너 내부 사진입니다(13 Claudio Elias, PD · 14·15 U.S. Marine Corps, Lance Cpl. Eric Reyes, PD · 16~19 Danny Cornelissen, 출처 표시 조건). 20~24는 팀이 모은 테스트 사진입니다(20·21 hz-containers.com). AI 판정은 미리 준비한 결과이며, 컨테이너 번호·선박·선사는 예시입니다. 설비 규모 계산은 <a href="https://cvcvcv221.github.io/cleangate-simulator/">2단 검사 시뮬레이터</a>에서 볼 수 있습니다. 팀 클린게이트 · 2026 스마트물류 문제해결 경진대회</p>
 </div>
 
 <script>
 (function(){
 const $=id=>document.getElementById(id);
-const HOUR_W=[...Array(24)].map((_,h)=> (h>=8&&h<17)?0.08:0.28/15);
-function rng(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
-function tri(r,[lo,mo,hi]){const u=r(),c=(mo-lo)/(hi-lo);return u<c?lo+Math.sqrt(u*(hi-lo)*(mo-lo)):hi-Math.sqrt((1-u)*(hi-lo)*(hi-mo))}
-function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
-function pois(r,l){if(l>30)return Math.max(0,Math.round(l+Math.sqrt(l)*gauss(r)));const L=Math.exp(-l);let k=0,p=1;for(;;){p*=r();if(p<=L)return k;k++}}
-function p90(a){if(!a.length)return NaN;const s=a.slice().sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.ceil(.9*s.length)-1)]}
-// 최소 힙
-class Heap{constructor(c){this.a=[];this.c=c}push(x){const a=this.a;a.push(x);let i=a.length-1;while(i){const p=(i-1)>>1;if(this.c(a[i],a[p])<0){[a[i],a[p]]=[a[p],a[i]];i=p}else break}}
- pop(){const a=this.a,t=a[0],e=a.pop();if(a.length){a[0]=e;let i=0;for(;;){let l=2*i+1,r=l+1,m=i;if(l<a.length&&this.c(a[l],a[m])<0)m=l;if(r<a.length&&this.c(a[r],a[m])<0)m=r;if(m===i)break;[a[i],a[m]]=[a[m],a[i]];i=m}}return t}get size(){return this.a.length}}
+let tab="list",sel2=null,sel3=null,busy=false,lastPlan=null,lastShot=null;
+const el=(t,cls,txt)=>{const e=document.createElement(t);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
 
-const CFG={bio_share:.3,top_share:.2,random_share:.05,spec:.95,t_inspect:[2,3,6],t_check:[2,3,6],t_wash:[30,40,60],t_dis:[10,15,25],days:4,warm:1,reps:6,seed:20261111};
+// ---------- 위험 유형과 대응 (공컨 스캐너와 같은 기준) ----------
+const HAZ={bio:"생물 유입",hyg:"위생",safe:"작업자 안전",struct:"구조 손상"};
+const ACT={
+ isolate:{n:1,team:"게이트",task:"반출 중지, 격리 구역으로 이동",t:"즉시"},
+ safety:{n:1,team:"안전관리자",task:"작업 중지·환기 후 물질 확인",t:"즉시"},
+ quar:{n:2,team:"농림축산검역본부",task:"생물·알·식물 확인, 대상이면 검역 조치",t:"당일"},
+ pest:{n:2,team:"방역업체",task:"설치류 흔적 위생 처리",t:"당일"},
+ remove:{n:3,team:"세척장",task:"잔재물 수거, 흙·식물은 봉인 후 지정 폐기",t:"4시간 내"},
+ disinfect:{n:3,team:"소독반",task:"생물·흔적 구역 소독 후 봉인 이송",t:"2시간 내"},
+ special:{n:3,team:"전문 세척업체",task:"화학 오염 전용 세척",t:"당일"},
+ wash:{n:4,team:"세척장",task:"고압 세척",t:"4시간 내"},
+ dry:{n:4,team:"세척장",task:"건조·환기",t:"4시간 내"},
+ repair:{n:5,team:"수리장",task:"바닥·벽 손상 수리",t:"1~2일"},
+ reshoot:{n:6,team:"게이트",task:"처리 후 재촬영, 정상이면 반출",t:"처리 후"},
+};
+const CATS={
+ "곤충·절지동물":{hz:"bio",acts:["isolate","quar","disinfect","wash","reshoot"],ex:"개미, 딱정벌레, 바퀴, 거미"},
+ "알·유충·고치":{hz:"bio",acts:["isolate","quar","remove","disinfect","wash","reshoot"],ex:"알 덩어리, 애벌레, 번데기"},
+ "연체동물":{hz:"bio",acts:["isolate","quar","remove","wash","reshoot"],ex:"달팽이, 민달팽이"},
+ "식물·종자":{hz:"bio",acts:["remove","wash","reshoot"],high:["quar"],ex:"잎, 씨앗, 곡물, 짚"},
+ "흙·토양":{hz:"bio",acts:["remove","wash","reshoot"],high:["quar"],ex:"흙덩이, 진흙"},
+ "목재 잔재":{hz:"bio",acts:["remove","wash","reshoot"],high:["quar"],ex:"톱밥, 나무껍질"},
+ "설치류·동물 흔적":{hz:"hyg",acts:["isolate","pest","disinfect","wash","reshoot"],ex:"배설물, 갉은 자국"},
+ "곰팡이·습기":{hz:"hyg",acts:["wash","dry","reshoot"],high:["repair"],ex:"곰팡이 반점, 물 고임"},
+ "일반 폐기물":{hz:"hyg",acts:["remove","reshoot"],ex:"비닐, 노끈, 포장재"},
+ "화학·액체 오염":{hz:"safe",acts:["isolate","safety","special","reshoot"],ex:"기름, 분말, 악취 흔적"},
+ "구조 손상":{hz:"struct",acts:["repair","reshoot"],ex:"바닥 구멍, 벌어진 틈, 문 고무 파손"},
+};
+const CAT_NAMES=Object.keys(CATS);
 
-function runOnce(p,seed){
-  const r=rng(seed),C=[],ev=new Heap((x,y)=>x[0]-y[0]||x[1]-y[1]);let seq=0;
-  const pr=p.prev,c=p.capture,qClean=(CFG.top_share-pr*c)/(1-pr);
-  for(let d=0;d<CFG.days;d++)for(let h=0;h<24;h++){const n=pois(r,p.daily*HOUR_W[h]);
-    for(let k=0;k<n;k++){const t=(d*24+h)*60+r()*60,bad=r()<pr,bio=bad&&r()<CFG.bio_share;
-      let sel;if(p.all)sel=true;else{const top=r()<(bad?c:qClean);sel=top||r()<CFG.random_share}
-      C.push({t,bad,bio,sel});if(sel){ev.push([t,seq++,0,C.length-1])}}}
-  let freeSt=p.stations,freeLn=p.lanes;const stQ=[];let stHead=0;const lnQ=new Heap((x,y)=>x[0]-y[0]||x[1]-y[1]);
-  const warm=CFG.warm*1440,qlog=new Array(24).fill(0),qcnt=new Array(24).fill(0);let nextSample=warm,busy=0,lastT=warm;
-  const startSt=(i,now)=>{const x=C[i];let dur=tri(r,CFG.t_inspect);x.flag=x.bad?r()<p.sens:r()>CFG.spec;if(x.flag)dur+=tri(r,CFG.t_check);ev.push([now+dur,seq++,1,i])};
-  const startLn=(i,now)=>{const x=C[i];const dur=tri(r,CFG.t_wash)+(x.bio?tri(r,CFG.t_dis):0);ev.push([now+dur,seq++,2,i])};
-  while(ev.size){const [now,,kind,i]=ev.pop();
-    while(nextSample<=now&&nextSample<CFG.days*1440){const h=Math.floor(nextSample/60)%24;qlog[h]+=stQ.length-stHead;qcnt[h]++;nextSample+=10}
-    if(now>warm){busy+=(p.stations-freeSt)*(now-Math.max(lastT,warm))}lastT=now;
-    const x=C[i];
-    if(kind===0){if(freeSt>0){freeSt--;startSt(i,now)}else stQ.push(i)}
-    else if(kind===1){if(stHead<stQ.length)startSt(stQ[stHead++],now);else freeSt++;
-      if(x.flag&&x.bad){const arr=now+p.travel;x.toWash=arr;ev.push([arr,seq++,3,i])}else x.out=now}
-    else if(kind===3){if(freeLn>0){freeLn--;startLn(i,now)}else lnQ.push([x.bio?0:1,now,i])}
-    else{x.out=now;if(lnQ.size){startLn(lnQ.pop()[2],now)}else freeLn++}}
-  const days=CFG.days-CFG.warm,M=C.filter(x=>x.t>=warm),S=M.filter(x=>x.sel&&x.out!==undefined);
-  const normal=S.filter(x=>!x.flag),conf=S.filter(x=>x.flag&&x.bad);
-  return{sel:M.filter(x=>x.sel).length/days,skip:M.filter(x=>!x.sel).length/days,normal:normal.length/days,
-    fp:S.filter(x=>x.flag&&!x.bad).length/days,conf:conf.length/days,bio:conf.filter(x=>x.bio).length/days,bad:M.filter(x=>x.bad).length/days,
-    wait:p90(normal.map(x=>x.out-x.t)),wash:p90(conf.map(x=>(x.out-x.t)/60)),
-    util:busy/(p.stations*(CFG.days*1440-warm)),q:qlog.map((v,h)=>qcnt[h]?v/qcnt[h]:0)}
+// ---------- 합성 사진과 준비한 판정 ----------
+const PHOTOS=[
+ {id:1,label:"정상"},{id:2,label:"흙·낙엽"},{id:3,label:"개미 무리"},{id:4,label:"물 얼룩·곰팡이"},
+ {id:5,label:"포장 폐기물"},{id:6,label:"거미줄·벌레 사체"},{id:7,label:"어두운 사진"},{id:8,label:"설치류 흔적"},
+ {id:9,label:"바닥 파손"},{id:10,label:"화학 오염"},{id:11,label:"달팽이·씨앗"},{id:12,label:"알 덩어리"},
+ {id:13,label:"[실사] 정상 (냉동 컨테이너)",real:1},{id:14,label:"[실사] 천장 부식 구멍",real:1},{id:15,label:"[실사] 바닥 흙먼지 (점검 중)",real:1},
+ {id:16,label:"[실사] 바닥 보수판",real:1},{id:17,label:"[실사] 정상 (알루미늄 바닥)",real:1},{id:18,label:"[실사] 남은 물건",real:1},{id:19,label:"[실사] 정상 (나무 바닥)",real:1},
+ {id:20,label:"[실사] 정상 (새 컨테이너)",real:1},{id:21,label:"[실사] 벽 부식·바닥 보수",real:1},{id:22,label:"[실사] 남은 포장재·톱밥",real:1},{id:23,label:"[실사] 곰팡이·녹물",real:1},{id:24,label:"[실사] 낙엽·흙",real:1}];
+const CREDITS={13:"Claudio Elias · 퍼블릭 도메인 · Wikimedia Commons",14:"U.S. Marine Corps (Lance Cpl. Eric Reyes) · 퍼블릭 도메인 · Wikimedia Commons",15:"U.S. Marine Corps (Lance Cpl. Eric Reyes) · 퍼블릭 도메인 · Wikimedia Commons",16:"Danny Cornelissen · 출처 표시 · Wikimedia Commons",17:"Danny Cornelissen · 출처 표시 · Wikimedia Commons",18:"Danny Cornelissen · 출처 표시 · Wikimedia Commons",19:"Danny Cornelissen · 출처 표시 · Wikimedia Commons",20:"팀 수집 사진 (hz-containers.com)",21:"팀 수집 사진 (hz-containers.com)",22:"팀 테스트 사진",23:"팀 테스트 사진",24:"팀 테스트 사진"};
+const REMOTE={};
+const F=(category,name,severity,description,location,alive)=>({category,name,severity,description,location,alive:alive||"해당 없음"});
+const PREP={
+ 1:{quality:"양호",confidence:.92,findings:[],reason:"보이는 문제가 없어 반출 가능"},
+ 2:{quality:"양호",confidence:.84,findings:[F("흙·토양","흙덩이 의심","높음","바닥 앞쪽에 흙덩이가 넓게 흩어져 있음","바닥 앞쪽"),F("식물·종자","낙엽·짚 의심","중간","마른 잎과 짚 조각이 흙과 섞여 있음","바닥 앞쪽")],reason:"흙과 식물 잔재는 해충 알이 섞일 수 있어 수거 후 세척"},
+ 3:{quality:"양호",confidence:.81,findings:[F("곤충·절지동물","개미 무리 의심","높음","붉은색 개미로 보이는 개체 수십 마리가 바닥 이음매를 따라 모여 있음","바닥 오른쪽","알 수 없음"),F("흙·토양","흙 소량","낮음","개미 무리 주변에 흙이 조금 보임","바닥 오른쪽")],reason:"외래 개미 가능성이 있어 반출을 멈추고 검역본부 확인 필요"},
+ 4:{quality:"양호",confidence:.8,findings:[F("곰팡이·습기","곰팡이·물 얼룩 의심","중간","벽과 바닥에 젖은 얼룩과 곰팡이 반점이 보임","왼쪽 벽, 바닥")],reason:"습기는 해충 서식 조건이 되므로 세척·건조 필요"},
+ 5:{quality:"양호",confidence:.86,findings:[F("일반 폐기물","포장재 잔재","낮음","비닐과 끈, 종이 포장재가 남아 있음","바닥 중앙")],reason:"잔재물 수거 후 반출"},
+ 6:{quality:"양호",confidence:.74,findings:[F("곤충·절지동물","벌레 사체·거미줄 의심","중간","천장 모서리에 거미줄과 작은 벌레 사체가 보임","천장 모서리","아니오")],reason:"사체라도 종 확인을 위해 검역 확인 후 소독"},
+ 7:{quality:"어두움",confidence:.3,findings:[],reason:"사진이 어두워 판정할 수 없어 조명을 켜고 다시 촬영"},
+ 8:{quality:"양호",confidence:.79,findings:[F("설치류·동물 흔적","설치류 배설물 의심","높음","벽을 따라 작은 검은 알갱이가 줄지어 있음","왼쪽 벽 아래"),F("일반 폐기물","갉은 상자","낮음","모서리가 뜯긴 종이 상자가 있음","바닥 중앙")],reason:"설치류 흔적은 위생 처리 후 세척 필요"},
+ 9:{quality:"양호",confidence:.83,findings:[F("구조 손상","바닥 판자 구멍","높음","바닥 판자 일부가 부서져 아래가 보이는 구멍이 있음","바닥 가운데")],reason:"구멍으로 생물이 드나들 수 있어 수리 전 재사용 금지"},
+ 10:{quality:"양호",confidence:.77,findings:[F("화학·액체 오염","액체 얼룩 의심","높음","바닥에 검고 번들거리는 액체 얼룩이 넓게 퍼져 있음","바닥 앞쪽")],reason:"정체 모를 액체라 작업자 안전 확인 후 전문 세척"},
+ 11:{quality:"양호",confidence:.76,findings:[F("연체동물","달팽이 의심","높음","벽에 달팽이로 보이는 개체 여러 마리가 붙어 있음","왼쪽·오른쪽 벽","알 수 없음"),F("식물·종자","씨앗·곡물 의심","중간","바닥에 작은 씨앗이 흩어져 있음","바닥 앞쪽")],reason:"외래 달팽이 가능성이 있어 검역본부 확인 필요"},
+ 13:{quality:"양호",confidence:.9,findings:[],reason:"바닥·벽·천장에 보이는 오염이나 손상이 없어 반출 가능"},
+ 14:{quality:"양호",confidence:.88,findings:[F("구조 손상","천장 부식 구멍 다수","높음","천장 전체에 빛이 새어 들어오는 부식 구멍이 여러 개 있음","천장"),F("곰팡이·습기","녹물 자국","중간","벽을 따라 녹물이 흘러내린 자국이 있음","왼쪽 벽")],reason:"구멍으로 빗물과 생물이 드나들 수 있어 수리 전 재사용 금지"},
+ 15:{quality:"역광",confidence:.72,findings:[F("흙·토양","바닥 흙먼지·얼룩","중간","문 쪽 바닥 전체에 흙먼지와 얼룩이 넓게 깔려 있음","바닥 앞쪽~가운데"),F("일반 폐기물","작은 잔재물","낮음","바닥에 작은 부스러기가 흩어져 보임","바닥 가운데")],reason:"흙은 해충 알이 섞일 수 있어 쓸어 낸 뒤 세척하고, 역광이라 조명을 켜고 재촬영 권장"},
+ 16:{quality:"양호",confidence:.8,findings:[F("구조 손상","바닥 가운데 금속판 보수 흔적","낮음","나무 바닥 가운데를 금속판으로 덧댄 자리가 있고 판 위에 금 간 듯한 검은 줄이 보임","바닥 가운데")],reason:"보수 부위가 벌어졌는지 확인 후 이상 없으면 반출"},
+ 17:{quality:"양호",confidence:.9,findings:[],reason:"냉동 컨테이너 알루미늄 바닥·벽에 보이는 오염이나 손상이 없어 반출 가능"},
+ 18:{quality:"양호",confidence:.82,findings:[F("일반 폐기물","남은 물건(금속 봉)","중간","문 근처 바닥에 금속 봉 몇 개가 놓여 있음","문 앞 바닥 왼쪽"),F("흙·토양","바닥 홈 사이 잔재","낮음","바닥 레일 홈 사이에 작은 부스러기가 보임","바닥")],reason:"남은 물건을 치우고 바닥 홈을 청소한 뒤 반출"},
+ 19:{quality:"양호",confidence:.88,findings:[],reason:"나무 바닥과 벽에 보이는 오염·손상이 없어 반출 가능"},
+ 20:{quality:"양호",confidence:.92,findings:[],reason:"새 컨테이너로 바닥·벽·천장에 오염이나 손상이 보이지 않아 반출 가능"},
+ 21:{quality:"양호",confidence:.84,findings:[F("구조 손상","벽 전체 녹·부식","중간","양쪽 벽 골판 이음매를 따라 녹이 넓게 번져 있음","양쪽 벽"),F("구조 손상","바닥 보수 흔적·얼룩","낮음","바닥 가운데에 판을 덧댄 자리와 검은 얼룩이 있음","바닥 가운데")],reason:"부식이 구멍으로 번졌는지 확인하고 녹 제거·보수 후 재사용"},
+ 22:{quality:"양호",confidence:.86,findings:[F("일반 폐기물","남은 포장재(끈·비닐·상자)","중간","바닥에 노란 끈, 흰 비닐 시트, 종이 상자가 남아 있음","바닥 가운데~오른쪽"),F("목재 잔재","톱밥·나무 부스러기","중간","바닥 앞쪽에 톱밥 같은 부스러기가 흩어져 있음","바닥 앞쪽")],reason:"포장재는 수거하고, 톱밥은 목재 해충이 섞일 수 있어 쓸어 낸 뒤 세척"},
+ 23:{quality:"양호",confidence:.83,findings:[F("곰팡이·습기","곰팡이 의심(녹색·검은 반점)","높음","왼쪽 벽 아래쪽에 녹색과 검은 반점이 군데군데 퍼져 있음","왼쪽 벽 아래"),F("곰팡이·습기","녹물 자국","낮음","안쪽 벽에 녹물이 흘러내린 자국이 있음","안쪽 벽")],reason:"곰팡이는 세척·건조하고 습기가 들어온 원인(틈·구멍)을 확인"},
+ 24:{quality:"양호",confidence:.85,findings:[F("식물·종자","낙엽·식물 잔재","높음","오른쪽 바닥에 마른 잎과 잔가지가 모여 있음","바닥 오른쪽 앞"),F("흙·토양","흙 부스러기","낮음","잎 주변에 흙 부스러기가 보임","바닥 오른쪽 앞")],reason:"식물 잔재에는 해충 알·씨앗이 섞일 수 있어 수거 후 세척하고 검역 확인"},
+ 12:{quality:"양호",confidence:.8,findings:[F("알·유충·고치","알 덩어리 의심","높음","천장과 벽 위쪽에 둥근 알 덩어리 여러 개가 붙어 있음","천장, 오른쪽 벽 위","알 수 없음")],reason:"해충 알일 수 있어 반출을 멈추고 검역본부 확인 필요"},
+};
+const imgSrc=id=>REMOTE[id]||`img/${id}.jpg`;
+
+// ---------- 오늘의 반출 목록 (예시 데이터) ----------
+const ORIGIN={"중국 광저우":.9,"베트남 하이퐁":.75,"인도네시아 자카르타":.7,"중국 상하이":.55,"태국 람차방":.6,"미국 로스앤젤레스":.3,"일본 도쿄":.2,"독일 함부르크":.15};
+const CARGO={"목재·석재":.8,"농산물·식물":.75,"식품·사료":.5,"일반 공산품":.2,"전자제품":.1};
+const CARRIER={"가나해운":.6,"다라해운":.35,"마바해운":.15};
+const SEASON=.4; // 11월 (선선한 시기)
+const VESSELS=["CG 오션 1호","CG 오션 2호","CG 블루 3호"];
+const ROWS=[
+ ["CGDU1000137",0,"중국 광저우","목재·석재","가나해운",0,21],
+ ["CGDU1000142",0,"중국 광저우","농산물·식물","가나해운",0,15],
+ ["CGDU1000158",1,"베트남 하이퐁","목재·석재","다라해운",0,22],
+ ["CGDU1000163",1,"인도네시아 자카르타","농산물·식물","가나해운",0,20,1],
+ ["CGDU1000179",0,"중국 상하이","식품·사료","다라해운",0,0],
+ ["CGDU1000184",2,"미국 로스앤젤레스","일반 공산품","마바해운",0,23],
+ ["CGDU1000190",1,"태국 람차방","일반 공산품","마바해운",1,24],
+ ["CGDU1000205",2,"일본 도쿄","전자제품","마바해운",0,0],
+ ["CGDU1000210",0,"중국 상하이","일반 공산품","다라해운",0,0],
+ ["CGDU1000226",2,"독일 함부르크","전자제품","마바해운",0,0],
+ ["CGDU1000231",1,"베트남 하이퐁","일반 공산품","다라해운",0,0],
+ ["CGDU1000247",0,"중국 광저우","일반 공산품","다라해운",0,0],
+ ["CGDU1000252",2,"미국 로스앤젤레스","식품·사료","마바해운",0,0],
+ ["CGDU1000268",1,"인도네시아 자카르타","일반 공산품","마바해운",0,0],
+ ["CGDU1000273",2,"일본 도쿄","일반 공산품","다라해운",0,0],
+ ["CGDU1000289",0,"태국 람차방","식품·사료","다라해운",0,0],
+ ["CGDU1000294",2,"독일 함부르크","일반 공산품","마바해운",0,0],
+ ["CGDU1000300",1,"중국 상하이","전자제품","마바해운",0,0],
+ ["CGDU1000315",2,"일본 도쿄","전자제품","마바해운",0,0],
+ ["CGDU1000320",0,"미국 로스앤젤레스","일반 공산품","다라해운",0,0],
+];
+let C=[],learnBase={},LEARN={...ORIGIN},HIST={},day=1,lastChanges=null;
+Object.keys(ORIGIN).forEach(k=>HIST[k]=[ORIGIN[k]]);
+function score(o,ca,cr){return Math.round((.35*o+.25*CARGO[ca]+.25*SEASON+.15*CARRIER[cr])*100)/100}
+function init(rows){
+  rows=rows||ROWS;
+  C=rows.map(([no,v,org,ca,cr,soil,ph,fum],i)=>({i,no,vessel:VESSELS[v],origin:org,cargo:ca,carrier:cr,soil:!!soil,fum:!!fum,gasOk:false,photo:ph||19,score:score(LEARN[org],ca,cr),stage:"list"}));
+  const sorted=[...C].sort((a,b)=>b.score-a.score);const topN=Math.round(C.length*.2);
+  sorted.slice(0,topN).forEach(c=>c.why="top");
+  if(day>1){const prev=k=>{const h=HIST[k];return h.length>1?h[h.length-2]:h[0]};
+    C.forEach(c=>c.old=score(prev(c.origin),c.cargo,c.carrier));
+    const os=[...C].sort((a,b)=>b.old-a.old);os.forEach((c,r)=>c.oldRank=r+1);sorted.forEach((c,r)=>c.rank=r+1);
+    const oldTop=new Set(os.slice(0,topN));
+    C.forEach(c=>{c.newIn=c.why==="top"&&!oldTop.has(c);c.newOut=c.why!=="top"&&oldTop.has(c)})}
+  if(rows===ROWS){const rnd=C.find(c=>c.no==="CGDU1000184"); if(rnd&&!rnd.why)rnd.why="random";} // 기본 화면은 발표 예시와 같게 고정
+  else{const pool=C.filter(c=>!c.why);const n=Math.max(1,Math.round(C.length*.05));for(let k=0;k<n&&pool.length;k++){pool.splice(Math.floor(Math.random()*pool.length),1)[0].why="random"}} // 무작위 선별 5%: 실제로 무작위
+  C.forEach(c=>{c.open=!!c.why;c.ai=null;c.expert=null;c.plan=null;c.out=null});
+  learnBase=JSON.parse(JSON.stringify(LEARN));
+  sel2=null;sel3=null;lastPlan=null;lastShot=null;$("traceOut").innerHTML="";
 }
-function run(p){const rs=[];for(let k=0;k<CFG.reps;k++)rs.push(runOnce(p,CFG.seed+k));
-  const avg=f=>rs.reduce((s,x)=>s+(isNaN(f(x))?0:f(x)),0)/rs.length;
-  return{sel:avg(x=>x.sel),skip:avg(x=>x.skip),normal:avg(x=>x.normal),fp:avg(x=>x.fp),conf:avg(x=>x.conf),bio:avg(x=>x.bio),bad:avg(x=>x.bad),
-    wait:avg(x=>x.wait),wash:avg(x=>x.wash),util:avg(x=>x.util),q:[...Array(24)].map((_,h)=>avg(x=>x.q[h]))}}
+const fmtNo=n=>n.slice(0,4)+" "+n.slice(4,10)+" "+n.slice(10);
 
-const ids=['daily','stations','lanes','prev','capture','sens','travel'];
-let mode='sel';
-const fmt=(n,d=0)=>Number(n).toLocaleString('ko-KR',{maximumFractionDigits:d,minimumFractionDigits:d});
-function labels(){$('o_daily').textContent=fmt(+$('daily').value)+'대';$('o_stations').textContent=$('stations').value+'개';$('o_lanes').textContent=$('lanes').value+'개';
-  $('o_prev').textContent=(+$('prev').value).toFixed(1)+'%';$('o_capture').textContent=$('capture').value+'%';$('o_sens').textContent=$('sens').value+'%';$('o_travel').textContent=$('travel').value+'분';
-  $('capture').disabled=mode==='all'}
-function status(el,v,good,mid,unitGood){el.className='pill '+(v<=good?'ok':v<=mid?'mid':'no');el.textContent=v<=good?'목표 달성':v<=mid?'목표 근접':'목표 초과'}
-function draw(q){const W=640,H=200,L=36,B=26,T=10,max=Math.max(4,Math.ceil(Math.max(...q)/2)*2),bw=(W-L-8)/24;
-  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="시간대별 평균 검사 대기 줄 길이">`;
-  for(let k=0;k<=4;k++){const v=max*k/4,y=H-B-(H-B-T)*k/4;s+=`<line x1="${L}" x2="${W-4}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="var(--f-num)">${fmt(v,v%1?1:0)}</text>`}
-  q.forEach((v,h)=>{const bh=(H-B-T)*v/max,x=L+h*bw+2;s+=`<rect x="${x}" y="${H-B-bh}" width="${bw-4}" height="${Math.max(0,bh)}" rx="2" fill="${h>=8&&h<17?'var(--bar-hi)':'var(--bar)'}"/>`;
-    if(h%3===0)s+=`<text x="${x+(bw-4)/2}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="var(--f-num)">${h}시</text>`});
-  $('chart').innerHTML=s+'</svg>'}
-function calc(){labels();$('out').classList.add('busy');
-  setTimeout(()=>{const p={daily:+$('daily').value,stations:+$('stations').value,lanes:+$('lanes').value,prev:$('prev').value/100,capture:$('capture').value/100,sens:$('sens').value/100,travel:+$('travel').value,all:mode==='all'};
-    const R=run(p);
-    $('r_wait').textContent=isFinite(R.wait)?(R.wait>=60?fmt(R.wait/60,1)+'시간':fmt(R.wait,1)+'분'):'–';status($('s_wait'),R.wait,10,20);
-    $('r_wash').textContent=isFinite(R.wash)?fmt(R.wash,1)+'시간':'–';status($('s_wash'),R.wash,4,6);
-    $('d_wash').textContent=p.travel?`목표 4시간 이내 (K6), 이동 ${p.travel}분 포함`:'목표 4시간 이내 (K6), 이동 시간 제외';
-    $('r_det').textContent='하루 '+fmt(R.conf,0)+'건';$('s_det').textContent='연 약 '+fmt(R.conf*365/10000,1)+'만 건';
-    $('d_det').textContent=`전체 불량 하루 약 ${fmt(R.bad,0)}건 중 ${fmt(R.conf/R.bad*100,0)}% (생물 의심 ${fmt(R.bio,0)}건)`;
-    const eff=R.conf/R.sel*100,base=p.prev*p.sens*100;$('r_eff').textContent=fmt(eff,1)+'%';
-    const ratio=eff/base;$('s_eff').className='pill '+(ratio>=1.5?'ok':ratio>=1.1?'mid':'no');$('s_eff').textContent='무작위 개장의 '+fmt(ratio,1)+'배';
-    $('d_eff').textContent=`검사 레인 가동률 ${fmt(R.util*100,0)}% · 내부 검사 하루 ${fmt(R.sel,0)}대`;
-    const st=[[R.skip,'검사 없이 반출','정차 없음'],[R.normal,'정상 판정 반출','AI가 정상 판정'],[R.fp,'오판 → 확인 후 반출','검사원이 정상 확인'],[R.conf,'불량 확정 → 세척','대체 공컨 배정']];
-    $('flow').innerHTML=st.map(([v,a,b])=>`<div class="step"><b>${fmt(v,0)}대</b>${a}<br><span>${b}</span></div>`).join('');
-    draw(R.q);$('out').classList.remove('busy')},20)}
-let timer;ids.forEach(id=>$(id).addEventListener('input',()=>{labels();clearTimeout(timer);timer=setTimeout(calc,250)}));
-function setMode(m){mode=m;$('mSel').setAttribute('aria-pressed',m==='sel');$('mAll').setAttribute('aria-pressed',m==='all');
-  if(m==='all'&&+$('stations').value<21)$('stations').value=21;if(m==='all'&&+$('lanes').value<8)$('lanes').value=8;if(m==='sel'&&+$('stations').value>10){$('stations').value=6;$('lanes').value=4}calc()}
-$('mSel').onclick=()=>setMode('sel');$('mAll').onclick=()=>setMode('all');
-const preset=v=>{mode='sel';$('mSel').setAttribute('aria-pressed','true');$('mAll').setAttribute('aria-pressed','false');Object.entries(v).forEach(([k,x])=>$(k).value=x);calc()};
-$('pBase').onclick=()=>preset({daily:3855,stations:6,lanes:4,prev:5,capture:50,sens:60,travel:0});
-$('pPeak').onclick=()=>preset({daily:4397,stations:7,lanes:5,prev:5,capture:50,sens:60,travel:0});
-$('pDirty').onclick=()=>preset({daily:3855,stations:7,lanes:9,prev:12.9,capture:50,sens:60,travel:0});
-$('pRand').onclick=()=>preset({daily:3855,stations:6,lanes:4,prev:5,capture:20,sens:60,travel:0});
-calc();
+// ---------- 판정 → 계획 ----------
+function plan(ai){
+  const bad=/어두|흐림|안 보/.test(ai.quality);const hz=new Set(),keys=new Set();
+  for(const f of ai.findings){const c=CATS[f.category];if(!c)continue;hz.add(c.hz);c.acts.forEach(k=>keys.add(k));if(c.high&&f.severity==="높음")c.high.forEach(k=>keys.add(k))}
+  let v,cls;
+  if(bad&&!ai.findings.length){v="판정 불가 (재촬영)";cls="v-unk"}
+  else if(hz.has("bio")){v="생물 유입 의심";cls="v-bio"}
+  else if(hz.has("safe")){v="작업자 안전 주의";cls="v-safe"}
+  else if(hz.has("hyg")){v="위생·잔재물 처리 필요";cls="v-hyg"}
+  else if(hz.has("struct")){v="구조 손상";cls="v-struct"}
+  else{v="정상";cls="v-ok"}
+  return{verdict:v,cls,hz:[...hz],steps:[...keys].map(k=>ACT[k]).sort((a,b)=>a.n-b.n),bad};
+}
+function needsExpert(c){const p=plan(c.ai);return p.verdict!=="정상"||c.score>=.4||c.ai.confidence<.7}
+
+// ---------- AI 연결 (Claude 안에서만 실시간) ----------
+let sample=null;
+(async()=>{try{sample=window.claude?await window.claude.use("sample"):null}catch{sample=null}
+  if(sample){const lim=await sample.limits().catch(()=>null);if(!lim||!lim.images)sample=null}
+  if(sample){$("mode").textContent="AI: 실시간 판정 가능";$("mode").classList.add("live")}
+  render();})();
+const PROMPT=c=>`당신은 항만 방역 검사관을 돕는 1차 선별 AI입니다. 첨부 사진은 수입 빈 컨테이너 내부입니다.
+직전 화물: ${c.cargo} / 출발지: ${c.origin} / 사전 위험 점수: ${c.score}
+보이는 문제를 아래 유형 중 하나로 모두 분류하세요.
+${CAT_NAMES.map(n=>`- ${n}: ${CATS[n].ex}`).join("\n")}
+규칙: 보이는 것만 근거로, 종은 확정하지 말고 "의심"으로 씁니다. 사진이 어두우면 quality에 적고 확실한 것만 적습니다. 사진은 실제 컨테이너 내부 사진입니다.
+다음 JSON 하나로만 답하세요:
+{"quality":"양호"|"어두움"|"흐림","confidence":0~1,"findings":[{"category":"유형 이름","name":"짧은 이름","severity":"높음"|"중간"|"낮음","description":"한 문장","location":"위치","alive":"예"|"아니오"|"알 수 없음"|"해당 없음"}],"reason":"가장 시급한 조치와 이유 한 문장"}
+문제가 없으면 findings는 빈 배열입니다.`;
+const ERR={not_granted:"AI 사용이 허용되지 않아 준비한 판정을 씁니다.",rate_limited:"요청이 많아 잠시 뒤 다시 눌러 주세요.",images_unavailable:"이 보기에서는 사진을 AI로 보낼 수 없어 준비한 판정을 씁니다.",invalid_json:"결과를 읽지 못했습니다. 다시 눌러 주세요."};
+function norm(o){const pick=(v,l,d)=>l.includes(v)?v:d;const fix=c=>CAT_NAMES.find(n=>n===c)||CAT_NAMES.find(n=>String(c||"").includes(n.split("·")[0]))||"일반 폐기물";
+  return{quality:String(o.quality||"양호"),confidence:Math.max(0,Math.min(1,+o.confidence||0)),findings:Array.isArray(o.findings)?o.findings.slice(0,10).map(f=>({category:fix(f.category),name:String(f.name||"발견"),severity:pick(f.severity,["높음","중간","낮음"],"중간"),description:String(f.description||""),location:String(f.location||""),alive:String(f.alive||"알 수 없음")})):[],reason:String(o.reason||"")}}
+
+// ---------- 화면 ----------
+function setTab(t){tab=t;document.querySelectorAll("nav.steps button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===t));
+  ["list","shoot","review","log"].forEach(k=>$("tab-"+k).hidden=k!==t);render()}
+document.querySelectorAll("nav.steps button").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+const WHY={top:["개장 · 점수 상위","p-bad"],topNew:["개장 · 학습으로 새로 포함","p-bad"],random:["개장 · 무작위 선별","p-info"]};
+function stagePill(c){
+  if(!c.open)return c.soil?["통과 · 바깥 세척 후 반출","p-warn"]:c.newOut?["통과 · 학습으로 제외","p-mute"]:["통과 · 바로 반출","p-mute"];
+  if(c.out)return[c.out,c.out.startsWith("반출")?"p-ok":"p-warn"];
+  if(c.stage==="review")return["전문가 확인 대기","p-warn"];
+  if(c.stage==="shoot")return["현장 판정 대기","p-info"];
+  return c.newIn?WHY.topNew:WHY[c.why];
+}
+function renderList(){
+  const tb=$("tList").tBodies[0];tb.innerHTML="";
+  [...C].sort((a,b)=>b.score-a.score).forEach(c=>{
+    const tr=el("tr",(c.open?"sel":"")+(c.soil||c.fum?" warnrow":""));
+    const chg=(lastChanges||[]).find(x=>x.k===c.origin&&x.to!==x.from);
+    tr.append(el("td","num",fmtNo(c.no)),el("td","hm",c.vessel),el("td","",c.origin+(chg?(chg.to>chg.from?" ▲":" ▼"):"")),el("td","hm",c.cargo),el("td","hm",c.carrier));
+    const s=el("td","num");const bar=el("span","bar");bar.style.width=Math.round(c.score*(innerWidth<640?40:90))+"px";s.append(bar,document.createTextNode(c.score.toFixed(2)));if(c.old!=null&&Math.abs(c.old-c.score)>=.005){const dr=c.oldRank-c.rank;s.append(el("small","delta",` (어제 기준 ${c.old.toFixed(2)}${dr?` · 순위 ${dr>0?"▲":"▼"}${Math.abs(dr)}`:""})`))}tr.append(s);
+    {const td=el("td");if(c.soil||c.fum)td.append(el("span","pill p-warn","⚠ "+[c.soil?"흙":"",c.fum?"훈증 표지":""].filter(Boolean).join("·")));else td.textContent="이상 없음";tr.append(td)}
+    const [t,k]=stagePill(c);const td=el("td");td.append(el("span","pill "+k,t));tr.append(td);tb.append(tr)});
+  const n=k=>C.filter(c=>c.why===k).length,fu=C.filter(c=>c.fum&&c.open).length;
+  const al=$("gateAlert");al.innerHTML="";const warn=[...C].filter(c=>c.soil||c.fum).sort((a,b)=>b.score-a.score);
+  if(warn.length){const box=el("div","alertbar");box.setAttribute("role","alert");
+    box.append(el("b","",`⚠ 출구 카메라 경고 ${warn.length}건 · 바깥 촬영에서 이상이 찍혔습니다`));const ul=el("ul");
+    warn.forEach(c=>{const msg=[];
+      if(c.soil)msg.push(c.open?"바깥 흙 감지 → 문을 열 때 바닥·문틈까지 함께 확인":"바깥 흙 감지 → 반출 전 바깥 세척(고압수), 개장 대상은 아님");
+      if(c.fum)msg.push(c.open?"훈증 경고 표지 → 문 열기 전에 가스부터 측정":"훈증 경고 표지 → 열지 않고 반출, 도착지에 훈증 사실 통보");
+      ul.append(el("li","",`${fmtNo(c.no)} (${c.origin}) · ${msg.join(" / ")}`))});
+    box.append(ul);al.append(box)}
+  const dn=$("dayNote");dn.innerHTML="";
+  if(day>1){const box=el("div","verdict v-unk");
+    const ch=(lastChanges||[]).filter(x=>x.to!==x.from).sort((a,b)=>Math.abs(b.to-b.from)-Math.abs(a.to-a.from));
+    box.append(el("b","",`${day}일차 · 어제 판정 결과로 출발지 점수를 고쳐서 골랐습니다`));
+    box.append(el("span","",ch.length?ch.map(x=>`${x.k} ${x.from.toFixed(2)}→${x.to.toFixed(2)} ${x.to>x.from?"▲":"▼"} (어제 ${x.n}대 중 불량 ${x.bad})`).join(" · "):"어제 처리된 결과가 없어 점수는 그대로입니다. ④까지 진행한 뒤 넘어가면 바뀐 점수가 반영됩니다."));
+    dn.append(box)}
+  const ni=C.filter(c=>c.newIn).length,no=C.filter(c=>c.newOut).length;
+  $("openSum").textContent=`${day}일차 · 오늘 ${C.length}대 중 개장 ${C.filter(c=>c.open).length}대 = 점수 상위 ${n("top")}대(20%) + 무작위 선별 ${n("random")}대(5%)`+(fu?` · 이 중 훈증 표지 ${fu}대는 열기 전에 가스부터 잽니다`:"")+(day>1?` · 어제 결과로 순위가 바뀐 컨테이너 ${C.filter(c=>c.oldRank&&c.oldRank!==c.rank).length}대, 새로 연 컨테이너 ${ni}대`:"");
+  $("go2").disabled=!C.some(c=>c.open&&c.stage==="list");
+}
+function qitem(c,pressed,sub,onclick){const b=el("button","qitem");b.type="button";b.setAttribute("aria-pressed",pressed);
+  const im=el("img");im.src=imgSrc(c.photo);im.alt="";const mid=el("div");mid.append(el("div","no",fmtNo(c.no)),el("small","",sub));
+  const [t,k]=stagePill(c);b.append(im,mid,el("span","pill "+k,t));b.onclick=onclick;return b}
+function renderShoot(){
+  const q=$("q2");q.innerHTML="";const list=C.filter(c=>c.open&&c.stage==="shoot");
+  if(!list.length)q.append(el("div","empty",C.some(c=>c.open&&c.stage==="list")?"① 반출 목록에서 개장 대상을 현장으로 보내세요.":"판정할 컨테이너가 없습니다."));
+  list.forEach(c=>q.append(qitem(c,sel2===c.i,`${c.origin} · ${WHY[c.why][0].replace("개장 · ","")}${c.soil?" · ⚠ 바깥 흙":""}${c.fum?" · ⚠ 훈증 표지":""}`,()=>{sel2=c.i;render()})));
+  const v=$("shootView");v.innerHTML="";const c=C[sel2];
+  if(c==null||c.stage!=="shoot"){
+    // 방금 판정한 컨테이너의 결과를 이 자리에 보여 줌
+    const d=lastShot!=null?C[lastShot]:null;
+    if(d&&d.ai&&(d.stage==="done"||d.stage==="review")){const im0=el("img","photo");im0.src=imgSrc(d.photo);im0.alt=`${fmtNo(d.no)} 내부 사진`;v.append(im0);
+      const nx=d.stage==="review"?el("div","verdict v-unk",`${fmtNo(d.no)} · ③ 전문가 확인 대기로 넘어갔습니다`):el("div","verdict v-ok",`${fmtNo(d.no)} · AI가 충분한 확신으로 정상, 위험 점수도 낮아 전문가 확인 없이 반출`);
+      v.append(aiBlock(d),nx);return}
+    v.append(el("div","empty","왼쪽에서 컨테이너를 고르세요."));return}
+  const im=el("img","photo");im.src=imgSrc(c.photo);im.alt=`${fmtNo(c.no)} 내부 사진: ${PHOTOS[c.photo-1].label}`;v.append(im);if(CREDITS[c.photo])v.append(el("small","credit","사진 출처: "+CREDITS[c.photo]));
+  const r=el("div","row");const lb=el("label","","내부 사진");lb.htmlFor="pick";const s=el("select");s.id="pick";
+  PHOTOS.filter(p=>p.real).forEach(p=>{const o=el("option","",`${p.id}. ${p.label}`);o.value=p.id;if(p.id===c.photo)o.selected=true;s.append(o)});
+  s.onchange=()=>{c.photo=+s.value;render()};r.append(lb,s);v.append(r);
+  v.append(el("p","hint","공개된 컨테이너 내부 사진 중 벌레가 찍힌 사진은 없어, 생물(해충) 판정 예시는 발표 슬라이드 8장으로 대신합니다. 흙은 해충 알이 섞일 수 있어 생물 경로로 처리합니다."));
+  if(c.fum){const g=el("div","verdict "+(c.gasOk?"v-ok":"v-safe"));
+    g.append(el("b","",c.gasOk?"가스 측정 완료: 기준 이하":"훈증 경고 표지 확인됨: 문을 열기 전에 가스부터 잽니다"),
+      el("span","",c.gasOk?"환기 기준을 넘지 않아 문을 열고 촬영했습니다. 작업자는 안에 들어가지 않고 문 앞에서만 찍습니다.":"출구 카메라가 문의 훈증 경고 표지를 찍었습니다. 휴대용 측정기로 문틈 가스를 재고, 기준을 넘으면 환기한 뒤 엽니다."));
+    if(!c.gasOk){const gb=el("button","btn","가스 측정: 기준 이하 확인");gb.type="button";gb.onclick=()=>{c.gasOk=true;render()};g.append(gb)}
+    v.append(g)}
+  const dl=el("dl","kv");[["출발지",c.origin],["직전 화물",c.cargo],["선사",c.carrier],["위험 점수",c.score.toFixed(2)]].forEach(([a,b])=>{dl.append(el("dt","",a),el("dd","",b))});v.append(dl);
+  const r2=el("div","row");const bA=el("button","btn primary",sample?"실시간 AI 판정":"AI 판정 (준비한 결과)");bA.type="button";bA.disabled=busy||(c.fum&&!c.gasOk);
+  const st=el("span","status");st.id="st2";r2.append(bA);
+  if(sample){const bP=el("button","btn","준비한 결과로 보기");bP.type="button";bP.onclick=()=>judge(c,false);r2.append(bP)}
+  v.append(r2,st);bA.onclick=()=>judge(c,!!sample);
+}
+async function judge(c,live){
+  if(busy)return;let ai;
+  if(live){busy=true;render();$("st2").textContent="AI가 사진을 살펴보는 중입니다. 처음에는 허용 창이 뜰 수 있습니다 (보통 10~40초).";
+    try{const blob=await (await fetch(imgSrc(c.photo))).blob();ai=norm(await sample.json(PROMPT(c),{images:[blob]}));ai.live=true}
+    catch(e){busy=false;render();$("st2").textContent=ERR[e&&e.code]||"일시적인 문제로 판정하지 못했습니다. 다시 누르거나 준비한 결과로 보세요.";
+      if(e&&["not_granted","images_unavailable","sampling_disabled"].includes(e.code)){sample=null;$("mode").textContent="AI: 준비한 판정";$("mode").classList.remove("live")}return}
+    busy=false}
+  else ai={...JSON.parse(JSON.stringify(PREP[c.photo])),live:false};
+  c.ai=ai;sel2=null;
+  // 판정 결과는 ② 화면에 그대로 보여 주고, 의심 건은 ③에서 바로 열리도록 미리 골라 둠 (탭은 자동으로 넘기지 않음)
+  if(needsExpert(c)){c.stage="review";sel3=c.i;lastPlan=null}
+  else{c.stage="done";c.expert="생략 (AI 정상·저위험)";c.plan=null;c.out="반출 · 정상"}
+  lastShot=c.i;render();
+}
+function aiBlock(c){
+  const box=el("div","gap");const p=plan(c.ai);
+  const vd=el("div","verdict "+p.cls);vd.append(el("b","",`AI 1차 판정: ${p.verdict}`),el("span","",`사진 상태 ${c.ai.quality} · 확신도 ${Math.round(c.ai.confidence*100)}% · ${c.ai.live?"실시간 AI":"준비한 판정"}`));box.append(vd);
+  if(c.ai.findings.length){const ul=el("ul","finds");c.ai.findings.forEach(f=>{const li=el("li");const pill=el("span","pill "+(f.severity==="높음"?"p-bad":f.severity==="중간"?"p-warn":"p-mute"),f.severity);pill.style.marginLeft="6px";
+    const t=el("b","",f.name);li.append(t,pill,el("span","d",`${f.category} · ${f.location} · ${f.description}`));ul.append(li)});box.append(ul)}
+  if(c.ai.reason)box.append(el("p","hint","AI 의견: "+c.ai.reason));return box}
+function renderReview(){
+  const q=$("q3");q.innerHTML="";const list=C.filter(c=>c.stage==="review");
+  if(!list.length)q.append(el("div","empty","확인할 컨테이너가 없습니다."));
+  list.forEach(c=>{const p=plan(c.ai);q.append(qitem(c,sel3===c.i,`AI: ${p.verdict}`,()=>{sel3=c.i;lastPlan=null;render()}))});
+  const v=$("reviewView");v.innerHTML="";const c=C[sel3];
+  if(c==null||c.stage!=="review"){v.append(el("div","empty","확인할 컨테이너를 고르세요."));return}
+  const im=el("img","photo");im.src=imgSrc(c.photo);im.alt=`${fmtNo(c.no)} 내부 사진`;v.append(im);
+  const why=plan(c.ai).verdict==="정상"?(c.score>=.4?"AI는 정상으로 봤지만 위험 점수가 높아 사람이 한 번 더 봅니다.":"AI 확신도가 낮아 사람이 한 번 더 봅니다."):"AI가 문제를 의심했습니다. 사진과 근거를 보고 확정하세요.";
+  v.append(el("p","hint",`${fmtNo(c.no)} · ${c.origin} · 점수 ${c.score.toFixed(2)} — ${why}`),aiBlock(c));
+  const r=el("div","row");
+  const ok=el("button","btn primary","AI 판정이 맞음 → 처리 확정");ok.type="button";
+  const no=el("button","btn","문제없음 → 반출");no.type="button";
+  const re=el("button","btn","재촬영 요청");re.type="button";
+  ok.onclick=()=>decide(c,"confirm");no.onclick=()=>decide(c,"clear");re.onclick=()=>decide(c,"reshoot");
+  if(plan(c.ai).verdict==="정상"){ok.textContent="정상 확인 → 반출";ok.onclick=()=>decide(c,"clear");no.hidden=true}
+  r.append(ok,no,re);v.append(r);
+}
+function decide(c,d){
+  if(d==="reshoot"){c.stage="shoot";c.ai=null;sel3=null;render();return}
+  const p=plan(c.ai);
+  if(d==="clear"){c.expert="정상 확인";c.plan=null;c.out="반출 · 정상";}
+  else{c.expert="AI 판정 확정";c.plan=p;
+    if(p.bad&&!c.ai.findings.length){c.out="재촬영 후 판정";c.stage="shoot";c.ai=null;sel3=null;render();return}
+    c.out=p.hz.includes("bio")?"보류 · 검역본부 확인":"보류 · 세척·처리 후 반출";}
+  c.stage="done";sel3=null;lastPlan=c.i;render();
+}
+function showPlan(c){
+  const v=$("reviewView");v.innerHTML="";
+  const im=el("img","photo");im.src=imgSrc(c.photo);im.alt="";v.append(im);
+  if(!c.plan){v.append(el("div","verdict v-ok",`${fmtNo(c.no)} 정상 확인 · 반출`));const b0=el("button","btn","다음 확인 건으로");b0.type="button";b0.onclick=()=>{lastPlan=null;render()};v.append(b0);return}
+  const vd=el("div","verdict "+c.plan.cls);vd.append(el("b","",`확정: ${c.plan.verdict}`),el("span","",c.out));v.append(vd);
+  const ol=el("ol","steps-plan");c.plan.steps.forEach(s=>{const li=el("li");li.append(el("b","",s.team),document.createTextNode(` · ${s.task} (${s.t})`));ol.append(li)});v.append(ol);
+  v.append(el("p","hint",`대체 배정: 이 컨테이너를 기다리던 기사에게 ${c.carrier}의 같은 규격 깨끗한 공컨을 대신 배정합니다.`+(c.plan.hz.includes("bio")?" 생물 의심이므로 1차 소독·봉인 후 지정 운송으로 세척장에 보냅니다.":"")));
+  const b=el("button","btn","다음 확인 건으로");b.type="button";b.onclick=()=>{lastPlan=null;render()};v.append(b);
+}
+function renderLog(){
+  const tb=$("tLog").tBodies[0];tb.innerHTML="";const done=C.filter(c=>c.stage==="done"||!c.open&&c.stage!=="list");
+  C.filter(c=>c.open&&c.stage==="done").forEach(c=>{const tr=el("tr");const p=plan(c.ai);
+    tr.append(el("td","num",fmtNo(c.no)),el("td","",c.vessel),el("td","",p.verdict),el("td","",c.expert||"-"),el("td","",c.plan?c.plan.steps.map(s=>s.team).filter((x,i,a)=>a.indexOf(x)===i).join(" → "):"-"));
+    const td=el("td");const k=c.out.startsWith("반출")?"p-ok":"p-warn";td.append(el("span","pill "+k,c.out));tr.append(td);tb.append(tr)});
+  if(!tb.children.length){const tr=el("tr");const td=el("td","","아직 처리된 컨테이너가 없습니다.");td.colSpan=6;tr.append(td);tb.append(tr)}
+  // 학습
+  const L=$("learn");L.innerHTML="";const by=learnToday();
+  const keys=Object.keys(by);if(!keys.length){L.append(el("div","empty","판정이 쌓이면 출발지별 점수가 어떻게 바뀌는지 여기에 나타납니다. 위의 '다음 날로'를 누르면 바뀐 점수로 다음 날 컨테이너를 고릅니다."));return}
+  keys.forEach(k=>{const o=by[k],prior=LEARN[k],nw=o.nw;const d=el("div","lcard");
+    d.append(el("div","",k),el("b","",`${prior.toFixed(2)} → ${nw.toFixed(2)}`),el("small","",`열어 본 ${o.n}대 중 불량 ${o.bad}대`+(nw>prior?" · 다음 날 더 자주 엶":nw<prior?" · 다음 날 덜 엶":"")),el("small","",`날짜별 점수: ${HIST[k].concat([nw]).map(v=>v.toFixed(2)).join(" → ")}`));L.append(d)});
+  const nb=el("button","btn primary",`${day+1}일차로 넘어가기 (이 점수로 고름) →`);nb.type="button";nb.onclick=()=>$("newday").onclick();L.append(nb);
+}
+$("traceBtn").onclick=()=>{
+  const q=$("trace").value.replace(/\s/g,"").toUpperCase();const out=$("traceOut");out.innerHTML="";
+  const c=C.find(x=>x.no===q);if(!c){out.append(el("p","status","목록에 없는 번호입니다. 예: CGDU 100013 7"));return}
+  const same=C.filter(x=>x.vessel===c.vessel&&x.origin===c.origin);const all=C.filter(x=>x.vessel===c.vessel);
+  const box=el("div","verdict v-unk");box.append(el("b","",`${c.vessel}: 같은 출발지(${c.origin}) ${same.length}대, 같은 배 전체 ${all.length}대`));
+  box.append(el("span","",all.map(x=>`${fmtNo(x.no)} ${x.origin===c.origin?"★":""} ${x.open?(x.out||"검사 중"):"통과·반출됨 → 도착지 통보"}`).join(" / ")));out.append(box)};
+$("go2").onclick=()=>{C.forEach(c=>{if(c.open&&c.stage==="list")c.stage="shoot"});C.forEach(c=>{if(!c.open)c.stage="passed"});setTab("shoot")};
+$("reset").onclick=()=>{LEARN={...ORIGIN};Object.keys(ORIGIN).forEach(k=>HIST[k]=[ORIGIN[k]]);day=1;lastChanges=null;init();setTab("list")};
+function randomRows(){
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const origins=Object.keys(ORIGIN),cargos=Object.keys(CARGO),carriers=Object.keys(CARRIER);
+  const CLEAN=[13,17,19,20],DIRTY=[14,16,18,21,22,23],SOIL=[15,24];
+  const used=new Set();let base=1000100+Math.floor(Math.random()*800000);
+  const rows=[];
+  for(let k=0;k<20;k++){
+    let no;do{no="CGDU"+String(base+Math.floor(Math.random()*90000)).padStart(7,"0")}while(used.has(no));used.add(no);
+    // 2일차부터: 어제 점수가 바뀐 출발지의 컨테이너를 섞어 학습 효과가 보이게 함
+    const ch=(lastChanges||[]).filter(x=>x.to!==x.from).map(x=>x.k);
+    const org=(ch.length&&k<Math.min(10,ch.length*3))?ch[k%ch.length]:pick(origins),ca=pick(cargos),cr=pick(carriers),soil=Math.random()<.08?1:0;
+    const risk=score(LEARN[org],ca,cr);
+    const ph=soil?pick(SOIL):(Math.random()<.15+.6*risk?pick(DIRTY.concat(SOIL)):pick(CLEAN));
+    rows.push([no,Math.floor(Math.random()*3),org,ca,cr,soil,ph,Math.random()<.1?1:0]);
+  }
+  return rows;
+}
+function learnToday(){const by={};
+  C.filter(c=>c.open&&c.stage==="done").forEach(c=>{const o=by[c.origin]||(by[c.origin]={n:0,bad:0});o.n++;if(c.plan)o.bad++});
+  Object.keys(by).forEach(k=>{const o=by[k];o.nw=Math.round(((LEARN[k]*5)+o.bad)/(5+o.n)*100)/100});return by}
+$("newday").onclick=()=>{const by=learnToday();lastChanges=Object.keys(by).map(k=>({k,from:LEARN[k],to:by[k].nw,n:by[k].n,bad:by[k].bad}));
+  Object.keys(LEARN).forEach(k=>{if(by[k])LEARN[k]=by[k].nw;HIST[k].push(LEARN[k])});
+  day++;init(randomRows());setTab("list")};
+$("auto").onclick=()=>{ if(C.some(c=>c.open&&c.stage==="list"))$("go2").onclick();
+  C.filter(c=>c.stage==="shoot").forEach(c=>{c.gasOk=true;c.ai={...JSON.parse(JSON.stringify(PREP[c.photo])),live:false};if(needsExpert(c))c.stage="review";else{c.stage="done";c.expert="생략 (AI 정상·저위험)";c.out="반출 · 정상"}});
+  C.filter(c=>c.stage==="review").forEach(c=>decide(c,plan(c.ai).verdict==="정상"?"clear":"confirm"));lastPlan=null;
+  C.filter(c=>c.stage==="shoot").forEach(c=>{c.ai={...JSON.parse(JSON.stringify(PREP[c.photo])),live:false};c.stage="review"});
+  setTab("log")};
+function render(){
+  $("c1").textContent=C.length;$("c1b").textContent=C.filter(c=>c.open).length;
+  $("c2").textContent=C.filter(c=>c.stage==="shoot").length;$("c3").textContent=C.filter(c=>c.stage==="review").length;$("c4").textContent=C.filter(c=>c.open&&c.stage==="done").length;
+  if(tab==="list")renderList();if(tab==="shoot")renderShoot();if(tab==="log")renderLog();
+  if(tab==="review"){if(sel3==null&&lastPlan!=null){renderReviewQueueOnly();showPlan(C[lastPlan])}else renderReview()}
+}
+function renderReviewQueueOnly(){const q=$("q3");q.innerHTML="";const list=C.filter(c=>c.stage==="review");
+  if(!list.length)q.append(el("div","empty","확인할 컨테이너가 없습니다."));
+  list.forEach(c=>{const p=plan(c.ai);q.append(qitem(c,sel3===c.i,`AI: ${p.verdict}`,()=>{sel3=c.i;lastPlan=null;render()}))})}
+init();setTab("list");
 })();
+document.addEventListener("error",e=>{const t=e.target;if(t&&t.tagName==="IMG"){const d=document.createElement("div");d.className=(t.className||"")+" noimg";d.textContent=t.classList.contains("photo")?"사진을 불러오지 못했습니다. 판정은 그대로 진행됩니다.":"사진 없음";t.replaceWith(d)}},true);
 </script>
+
 </body></html>
