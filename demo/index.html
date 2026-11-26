@@ -447,7 +447,7 @@ function renderShoot(){
   const dl=el("dl","kv");[["출발지",c.origin],["직전 화물",c.cargo],["선사",c.carrier],["위험 점수",c.score.toFixed(2)]].forEach(([a,b])=>{dl.append(el("dt","",a),el("dd","",b))});v.append(dl);
   const decided=c.expert&&!c.expert.startsWith("생략");
   const r=el("div","row");const lb=el("label","","내부 사진 바꿔 보기");lb.htmlFor="pick";const s=el("select");s.id="pick";s.disabled=decided||busy;
-  PHOTOS.filter(p=>p.real).forEach(p=>{const o=el("option","",`${p.id}. ${p.label}`);o.value=p.id;if(p.id===c.photo)o.selected=true;s.append(o)});
+  PHOTOS.filter(p=>p.real&&p.id!==14).forEach(p=>{const o=el("option","",`${p.id}. ${p.label}`);o.value=p.id;if(p.id===c.photo)o.selected=true;s.append(o)});
   s.onchange=()=>{c.photo=+s.value;autoJudge(c);render()};r.append(lb,s);v.append(r);
   if(sample&&!decided){const r2=el("div","row");const bA=el("button","btn","실시간 AI로 다시 판정");bA.type="button";bA.disabled=busy;bA.onclick=()=>judge(c);r2.append(bA,Object.assign(el("span","status"),{id:"st2"}));v.append(r2)}
   v.append(el("p","hint","공개된 컨테이너 내부 사진 중 벌레가 찍힌 사진은 없어, 생물(해충) 판정 예시는 발표 슬라이드 8장으로 대신합니다. 흙은 해충 알이 섞일 수 있어 생물 경로로 처리합니다."));
@@ -529,7 +529,7 @@ $("reset").onclick=()=>{LEARN={...ORIGIN};Object.keys(ORIGIN).forEach(k=>HIST[k]
 function randomRows(){
   const pick=a=>a[Math.floor(Math.random()*a.length)];
   const origins=Object.keys(ORIGIN),cargos=Object.keys(CARGO),carriers=Object.keys(CARRIER);
-  const CLEAN=[13,17,19,20],DIRTY=[14,16,18,21,22,23],SOIL=[15,24];
+  const CLEAN=[13,17,19,20],DIRTY=[16,18,21,22,23],SOIL=[15,24]; // 14(천장 구멍)는 기존 손상 검사 대상이라 시연에서 제외
   const used=new Set();let base=1000100+Math.floor(Math.random()*800000);
   const rows=[];
   for(let k=0;k<20;k++){
